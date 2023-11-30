@@ -44,23 +44,32 @@ OpenAI API Key: abc-ABC1234567890
 ╭─────────────────────────────────────────────────────────────────────────────────────────────╮
 │ USER (enter your question below)                                                            │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────╯
-list the files in my documents folder and tell me if any files there appear to be duplicates of each other
+list the files in my documents folder and tell me if any files there appear to be duplicates of
+each other
 ╭─────────────────────────────────────────────────────────────────────────────────────────────╮
 │ ASSISTANT                                                                                   │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────╯
-Sure, I can help you with that. To begin, I will list the files in your Documents folder and then check for duplicates. Let's start by listing the files.
+Sure, I can help you with that. To begin, I will list the files in your Documents folder and
+then check for duplicates. Let's start by listing the files.
 
 $> ls ~/Documents
 ╭─────────────────────────────────────────────────────────────────────────────────────────────╮
 │ ...                                                                                         │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────╯
-Now that we have the list of files in the Documents folder, let's analyze and look for potential duplicates. Duplicates can be identified by their names or content, and since I don't have the ability to compare the content of the files directly, I'll look for files with identical or similar names that might indicate that they are duplicates.
+Now that we have the list of files in the Documents folder, let's analyze and look for
+potential duplicates. Duplicates can be identified by their names or content, and since I don't
+have the ability to compare the content of the files directly, I'll look for files with
+identical or similar names that might indicate that they are duplicates.
 
-Based on the file list, here are some files that have similar names and may be duplicates or variations of each other:
+Based on the file list, here are some files that have similar names and may be duplicates or
+variations of each other:
 
 ...
 
-These files have similar names that suggest they may be duplicates or related versions. If you want to confirm whether they are true duplicates (by content), I can compare the hash values of these pairs of files. This would help us confirm if they have identical content. Would you like to proceed with this approach?
+These files have similar names that suggest they may be duplicates or related versions. If you
+want to confirm whether they are true duplicates (by content), I can compare the hash values of
+these pairs of files. This would help us confirm if they have identical content. Would you like
+to proceed with this approach?
 ```
 
 </details>
