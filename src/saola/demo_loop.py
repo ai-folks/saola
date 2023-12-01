@@ -1,5 +1,7 @@
 from saola.convo import Convo, ShellInterface, FileWriteInterface
 from saola.model import OpenAIGPT4TurboPreview
+from rich.panel import Panel
+from rich import print as rprint
 import os
 
 # [!] Use at your own risk.
@@ -22,6 +24,11 @@ import os
 # Do not have your project depend on it.
 
 def demo_loop():
+    rprint(Panel("[red1] [!] This assistant will be able to execute commands\n" +
+                        "    on your shell when prompted. You will be asked to\n" +
+                        "    confirm the execution of each of these commands.\n" + 
+                        "    Please read each command and respond carefully.\n" +
+                        "    Use at your own risk.[/red1]", border_style="red1"))
     return Convo(
         OpenAIGPT4TurboPreview(api_key=os.getenv("OPENAI_API_KEY") or input("OpenAI API Key: ")),
         interfaces=[ShellInterface, FileWriteInterface],

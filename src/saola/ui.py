@@ -1,5 +1,4 @@
 import abc
-import os
 from rich.panel import Panel
 from rich import print as rprint
 from rich.markup import escape
