@@ -2,6 +2,12 @@
 
 Saola is an open-source Python module that enables developers to **build their own AI assistant** upon existing Large Language Model (LLM) APIs, by writing very little additional code. Saola conversations **function almost exactly like conversations with the underlying LLMs**. The only difference is that Saola assistants can be configured to **leverage certain _interfaces_** by way of special syntaxes.
 
+To install Saola simply do:
+
+```bash
+pip install git+https://github.com/ai-folks/saola.git@0.1.1
+```
+
 ## Assistant Without Interfaces
 
 The simplest example of a Saola assistant is one that mirrors the underlying LLM exactly (no special functionality, no interfaces):
