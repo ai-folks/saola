@@ -5,8 +5,8 @@ from rich import print as rprint
 from rich.markup import escape
 from rich.prompt import Confirm
 
-class Console(abc.ABC):
-    # A console is a bridge for the application to communicate with the user.
+class UI(abc.ABC):
+    # A UI is a bridge for the application to communicate with the user.
     def display_interface_output(self, output):
         # Displays an interface's output to the user.
         pass
@@ -29,7 +29,7 @@ class Console(abc.ABC):
         # Appends text to the assistant's output.
         pass
 
-class LocalShellConsole(Console):
+class ShellUI(UI):
     def display_interface_output(self, output):
         rprint(Panel("[bright_magenta]" + escape(output) + "[/bright_magenta]", border_style="bright_magenta"))
 

@@ -1,4 +1,4 @@
-from saola.interface import InterfacedConvo, SubprocessInterface, LocalFileWriteInterface
+from saola.convo import Convo, ShellInterface, FileWriteInterface
 from saola.model import OpenAIGPT4TurboPreview
 import os
 
@@ -9,7 +9,7 @@ import os
 # - The "local file write" interface.
 # - The preview version of OpenAI's GPT-4 turbo model.
 #
-# This assistant has access to your console shell, and also has a shortcut to write
+# This assistant has access to your shell console, and also has a shortcut to write
 # files to your computer. However, it will not do anything without asking.
 #
 # - You will see everything that the assitant tries to do.
@@ -21,9 +21,9 @@ import os
 # This file is likely to experience lots of breaking changes in the future.
 # Do not have your project depend on it.
 
-def default_loop():
-    return InterfacedConvo(
+def demo_loop():
+    return Convo(
         OpenAIGPT4TurboPreview(api_key=os.getenv("OPENAI_API_KEY") or input("OpenAI API Key: ")),
-        interfaces=[SubprocessInterface, LocalFileWriteInterface],
+        interfaces=[ShellInterface, FileWriteInterface],
         safety_checks=True
     ).loop()

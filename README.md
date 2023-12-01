@@ -17,19 +17,27 @@ Convo(OpenAIGPT4(api_key=input("OpenAI API Key: "))).loop()
 
 ### Assistant With Built-In Terminal Access
 
-This module ships with a built-in interface that enables an assistant to access the user's terminal by way of the `subprocess` Python module, as well as an interface that allows the assistant to write a new file or overwrite an existing one, as requested by the user. To test these capabilities, initiate an `InterfacedConvo` loop as below:
+This module ships with a built-in interface that enables an assistant to access the user's shell, as well as an interface that allows the assistant to write a new file or overwrite an existing one, as requested by the user. To test these capabilities, initiate an `Convo` loop as below:
 
 ```python
-from saola.interface import InterfacedConvo, SubprocessInterface, LocalFileWriteInterface
+from saola.convo import Convo, ShellInterface, FileWriteInterface
 from saola.model import OpenAIGPT4
 
-InterfacedConvo(
+Convo(
     OpenAIGPT4(api_key=input("OpenAI API Key: ")),
-    interfaces=[SubprocessInterface, LocalFileWriteInterface]
+    interfaces=[ShellInterface, FileWriteInterface]
 ).loop()
 ```
 
-Every time the assistant tries to run a command or write to a file, you will be prompted to confirm this action. Alternatively, you can specify `safety_checks=False` on the `InterfacedConvo` initializer to bypass these prompts.
+Alternatively, you can initiate a conversation that leverages all or most of Saola's built-in functionalities as follows:
+
+```python
+import saola
+
+saola.demo_loop()
+```
+
+Every time the assistant tries to run a command or write to a file, you will be prompted to confirm this action. You can optionally specify `safety_checks=False` on the `Convo` initializer to bypass these prompts.
 
 **Disclaimer**: This assistant is capable of executing shell commands and writing to files. It is intended for responsible use and should be employed with an understanding of the potential actions taken by the assistant.
 
@@ -79,7 +87,7 @@ to proceed with this approach?
 Say you wish to enable your assistant to exit the program on command. You can do this by creating a custom interface like the one below, and initiating the conversation loop:
 
 ```python
-from saola.interface import Interface, InterfacedConvo
+from saola.convo import Convo, Interface
 from saola.model import OpenAIGPT4
 import os
 
@@ -93,7 +101,7 @@ class ExitInterface(Interface):
     def execute(self, code):
         exit(0)
 
-InterfacedConvo(
+Convo(
     OpenAIGPT4(api_key=input("OpenAI API Key: ")),
     interfaces=[ExitInterface]
 ).loop()
@@ -131,4 +139,4 @@ Bye! It was nice assisting you.
 
 ## Custom UIs
 
-A custom UI may be constructed by subclassing the `Console` class. Details and examples to come.
+A custom UI may be constructed by subclassing the `UI` class. Details and examples to come.

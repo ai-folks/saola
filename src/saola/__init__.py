@@ -1,1 +1,1 @@
-from saola.default_loop import default_loop
+from saola.demo_loop import demo_loop
