@@ -5,7 +5,7 @@ Saola is an open-source Python module that enables developers to **build their o
 To install Saola simply do:
 
 ```bash
-pip install git+https://github.com/ai-folks/saola.git@0.1.2
+pip install git+https://github.com/ai-folks/saola.git@0.1.3
 ```
 
 ## Assistant Without Interfaces
@@ -37,10 +37,8 @@ Convo(
 
 Alternatively, you can initiate a conversation that leverages all or most of Saola's built-in functionalities as follows:
 
-```python
-import saola
-
-saola.demo_loop()
+```bash
+python -m saola.demo_loop
 ```
 
 Every time the assistant tries to run a command or write to a file, you will be prompted to confirm this action. You can optionally specify `safety_checks=False` on the `Convo` initializer to bypass these prompts.

@@ -124,7 +124,7 @@ class FileWriteInterface(Interface):
     pattern_start = "$FILE_WRITE> "
     pattern_end = os.linesep + "<FILE_WRITE$"
     explanation = """
-    Whenever needed, you may write a new file or replace the contents of a file in the user's filesystem, by starting a line with "$FILE_WRITE> " followed on the same line by the path to the file. The new contents of the file should start on the next line. After you are done typing the new contents of the file, you must end with a single line containing the text "<FILE_WRITE$". This will cause the file to be written to the filesystem of the user. Remember to always write the intended file content in full, as any stubbing would be written verbatim to the file.
+    Whenever needed, you may write a new file or replace the contents of a file in the user's filesystem, by starting a line with "$FILE_WRITE> " followed on the same line by the path to the file. The new contents of the file should start on the next line. After you are done typing the new contents of the file, you must end with a single line containing the text "<FILE_WRITE$". This will cause the file to be written to the filesystem of the user. Remember to always write the intended file content entirely. Avoid stubbing like "keep this part as is" as that would be written verbatim to the file.
     """
 
     def execute(self, code):
