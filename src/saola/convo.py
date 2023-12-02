@@ -61,14 +61,15 @@ class Interface:
     
     def _find_substring(self, substring, text, chunk, needs_newline):
         # Finds substring in text + chunk, if it intersects with chunk
-        assert len(substring) >= 1, "Interface substrings (prompt starts and ends) must not be empty!"
+        assert len(substring) >= 1, "Interface substrings (pattern starts and ends) must not be empty!"
         extended_chunk = (text[-len(substring) + 1:] if len(substring) > 1 else "") + chunk
         pos = extended_chunk.find(substring)
         if pos == -1: return -1
         full_text = text + chunk
+        pos += len(full_text) - len(extended_chunk)
         text_until_substring = full_text[:pos]
         if needs_newline and text_until_substring and not text_until_substring.endswith(os.linesep): return -1
-        return pos + len(full_text) - len(extended_chunk)
+        return pos
     
     def _find_pattern_start(self, text, chunk):
         return self._find_substring(self.pattern_start, text, chunk, needs_newline=True)
