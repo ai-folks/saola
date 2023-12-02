@@ -5,7 +5,7 @@ Saola is an open-source Python module that enables developers to **build their o
 To install Saola simply do:
 
 ```bash
-pip install git+https://github.com/ai-folks/saola.git@0.1.1
+pip install git+https://github.com/ai-folks/saola.git@0.1.2
 ```
 
 ## Assistant Without Interfaces
