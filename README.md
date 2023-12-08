@@ -86,6 +86,33 @@ to proceed with this approach?
 
 </details>
 
+### Context Management with `update_context()`
+
+As of the latest update, we've introduced the `update_context()` method to enable maintainers and developers to dynamically set or update the assistant's context during a conversation. This method is particularly useful for providing the assistant with persistent information or special instructions.
+
+For instance, if you want the assistant to remember to run server processes in a "no hang up" mode, you could introduce this context as follows:
+
+```python
+from saola.convo import Convo
+from saola.model import OpenAIGPT4
+
+# Create a conversation instance
+conversation = Convo(OpenAIGPT4(api_key=input("OpenAI API Key: ")))
+
+# Context to run server processes in a "no hang up" mode
+additional_context = """Remember to run server processes in a "no hang up" mode."""
+
+# Update the conversation context
+conversation.update_context(additional_context)
+
+# Continue the conversation loop with the new context
+conversation.loop()
+```
+
+By using `update_context()`, you ensure that your assistant's responses and actions take into account this specific directive throughout the interaction.
+
+
+
 ### Assistant With A Custom Interface
 
 Say you wish to enable your assistant to exit the program on command. You can do this by creating a custom interface like the one below, and initiating the conversation loop:
