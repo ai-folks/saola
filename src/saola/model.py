@@ -60,11 +60,11 @@ class Model:
         return self._get_answer(messages)
 
 class OpenAIModel(Model):
-    def __init__(self, model_name, organization=None, api_key=None):
+    def __init__(self, model_name, client=None, organization=None, api_key=None):
         self.model_name = model_name
         organization = organization or os.getenv("OPENAI_ORGANIZATION")
         api_key = api_key or os.getenv("OPENAI_API_KEY")
-        self.client = OpenAI(organization=organization, api_key=api_key)
+        self.client = client or OpenAI(organization=organization, api_key=api_key)
 
     def _stream_answer_nonstop(self, messages):
         response = self.client.chat.completions.create(
