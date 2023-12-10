@@ -33,7 +33,8 @@ def demo_loop():
                         "    Use at your own risk.[/red1]", border_style="red1"))
     
     open_ai_api_key = os.getenv("OPENAI_API_KEY") or input("OpenAI API Key: ")
-    client = OpenAI(api_key=open_ai_api_key)
+    open_ai_api_base = os.getenv("OPENAI_API_BASE")
+    client = OpenAI(api_key=open_ai_api_key, base_url=open_ai_api_base)
     available_model_names = [model.id for model in client.models.list()]
     preferred_model_names = ["gpt-4-1106-preview", "gpt-4", "gpt-3.5-turbo-1106"]
     model_name = None

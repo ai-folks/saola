@@ -60,11 +60,12 @@ class Model:
         return self._get_answer(messages)
 
 class OpenAIModel(Model):
-    def __init__(self, model_name, client=None, organization=None, api_key=None):
+    def __init__(self, model_name, client=None, organization=None, api_key=None, base_url=None):
         self.model_name = model_name
         organization = organization or os.getenv("OPENAI_ORGANIZATION")
         api_key = api_key or os.getenv("OPENAI_API_KEY")
-        self.client = client or OpenAI(organization=organization, api_key=api_key)
+        base_url = base_url or os.getenv("OPENAI_API_BASE")
+        self.client = client or OpenAI(organization=organization, api_key=api_key, base_url=base_url)
 
     def _stream_answer_nonstop(self, messages):
         response = self.client.chat.completions.create(
@@ -88,14 +89,14 @@ class OpenAIModel(Model):
         return (author, text)
         
 class OpenAIGPT35Turbo(OpenAIModel):
-    def __init__(self, api_key=None):
-        super().__init__("gpt-3.5-turbo", api_key=api_key)
+    def __init__(self, **kwargs):
+        super().__init__("gpt-3.5-turbo", **kwargs)
 
 class OpenAIGPT4(OpenAIModel):
-    def __init__(self, api_key=None):
-        super().__init__("gpt-4", api_key=api_key)
+    def __init__(self, **kwargs):
+        super().__init__("gpt-4", **kwargs)
 
 class OpenAIGPT4TurboPreview(OpenAIModel):
-    def __init__(self, api_key=None):
-        super().__init__("gpt-4-1106-preview", api_key=api_key)
+    def __init__(self, **kwargs):
+        super().__init__("gpt-4-1106-preview", **kwargs)
 
