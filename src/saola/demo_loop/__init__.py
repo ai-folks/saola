@@ -35,7 +35,7 @@ def demo_loop():
     open_ai_api_key = os.getenv("OPENAI_API_KEY") or input("OpenAI API Key: ")
     client = OpenAI(api_key=open_ai_api_key)
     available_model_names = [model.id for model in client.models.list()]
-    preferred_model_names = [] # ["gpt-4-1106-preview", "gpt-4", "gpt-3.5-turbo-1106"]
+    preferred_model_names = ["gpt-4-1106-preview", "gpt-4", "gpt-3.5-turbo-1106"]
     model_name = None
     for name in preferred_model_names:
         if name not in available_model_names: continue
