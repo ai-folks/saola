@@ -1,7 +1,9 @@
 from saola.convo import Convo, ShellInterface, FileWriteInterface
-from saola.model import OpenAIGPT4TurboPreview
+from saola.model import OpenAIModel
 from rich.panel import Panel
+from rich.prompt import Prompt
 from rich import print as rprint
+from openai import OpenAI
 import os
 
 # [!] Use at your own risk.
@@ -29,8 +31,21 @@ def demo_loop():
                         "    confirm the execution of each of these commands.\n" + 
                         "    Please read each command and respond carefully.\n" +
                         "    Use at your own risk.[/red1]", border_style="red1"))
+    
+    open_ai_api_key = os.getenv("OPENAI_API_KEY") or input("OpenAI API Key: ")
+    client = OpenAI(api_key=open_ai_api_key)
+    available_model_names = [model.id for model in client.models.list()]
+    preferred_model_names = ["gpt-4-1106-preview", "gpt-4", "gpt-3.5-turbo-1106"]
+    model_name = None
+    for name in preferred_model_names:
+        if name not in available_model_names: continue
+        model_name = name
+        break
+    if model_name is None:
+        model_name = Prompt.ask("Choose an OpenAI model", choices=available_model_names)
+    rprint(Panel("Using OpenAI model [bold]" + model_name + "[/bold]"))
     return Convo(
-        OpenAIGPT4TurboPreview(api_key=os.getenv("OPENAI_API_KEY") or input("OpenAI API Key: ")),
+        OpenAIModel(model_name, client=client),
         interfaces=[ShellInterface, FileWriteInterface],
         safety_checks=True
     ).loop()
