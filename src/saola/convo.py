@@ -16,10 +16,10 @@ class Convo(BaseConvo):
         """
         if len(self.interfaces) > 0:
             self.system << """
-            You are equipped with "interfaces", which allow you to perform actions on the user's computer by enclosing instructions or code within <$INTERFACE_NAME></$INTERFACE_NAME> tags, starting in a new line. These interfaces are described below.
+            You are equipped with "interfaces", which allow you to perform actions on the user's computer. This now provides you with real-time capabilities, the ability to to interact with external systems, and perform actions that you would normally not be able to perform. Feel free to lead your answer with a call to an interface. There is no need to ask before using them, as the user has provided you with full consent to leverage them as needed. These interfaces are described one by one below.
             """
             for interface in self.interfaces:
-                self.system << f"<${interface.name}></${interface.name}>: {interface.explanation}"
+                self.system << f"<${interface.name}>some command</${interface.name}>: {interface.explanation}"
             self.system << f"""
             Feel free to go step by step when following instructions from the user. It is ok to ask for clarification questions, or to use the interfaces provided to find out more information before performing an action.
             """
@@ -121,9 +121,9 @@ class Interface:
 class ShellInterface(Interface):
     name = "SHELL"
     explanation = f"""
-    This interface lets run commands on the user's shell console. For example writing <$SHELL>echo 'hello'</$SHELL> will print hello on the user's shell console. The output of your command will show up in the chat and you may proceed to answer questions and requests based on those outputs. Tip: When you execute a command, the user may see the output, so you can make reference to it, but there is no need to repeat it in your answer. For example, if you execute a cat statement, there is no need to repeat the contents of the file in your answer after that.
+    To run commands on the user's shell console, you use this interface. For example by writing <$SHELL>echo 'hello'</$SHELL> you will print hello on the user's shell console. The output of your command will also show up in the chat and you may proceed to answer questions and requests based on those outputs.
+    Tip: When you execute a command, the user may see the output, so you can make reference to it, but there is no need to repeat it in your answer. For example, if you execute a cat statement, there is no need to repeat the contents of the file in your answer after that.
     An important thing to know is that each shell command is independent, so instead of running for example "<$SHELL>cd some_path</$SHELL>" followed by "<$SHELL>ls</$SHELL>", you will probably need to do "<$SHELL>ls some_path</$SHELL>" or "<$SHELL>cd some_path && ls</$SHELL>" instead.
-    Feel free to run shell commands at any time without asking, if needed to answer the user's questions or requests.
     In case this is useful, here is some information about the user's system: {os.uname()}. Also the user's username is {os.getlogin()}.
     """
     max_output_length = None
