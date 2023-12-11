@@ -143,9 +143,9 @@ class FileWriteInterface(Interface):
             if len(args) == 1: args = args + [""]
             first_line, contents = args
             file_path = first_line.strip()
-            file_path = os.path.expanduser(file_path)
+            file_path = os.path.abspath(os.path.expanduser(file_path))
             base_folder = os.path.dirname(file_path)
-            if not os.path.exists(base_folder): os.makedirs(base_folder)
+            if base_folder and not os.path.exists(base_folder): os.makedirs(base_folder)
             with open(file_path, "w") as f: f.write(contents)
             return f"File written to {file_path}"
         except Exception as e:
