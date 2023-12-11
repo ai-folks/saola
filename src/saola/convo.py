@@ -121,7 +121,7 @@ class Interface:
 class ShellInterface(Interface):
     name = "SHELL"
     explanation = f"""
-    To run commands on the user's shell console, you use this interface. For example by writing <$SHELL>echo 'hello'</$SHELL> you will print hello on the user's shell console. The output of your command will also show up in the chat and you may proceed to answer questions and requests based on those outputs.
+    Whenever you need, you may turn to he user's shell console. For example by writing <$SHELL>echo 'hello'</$SHELL> you will print hello on it. The output of your command will also show up in the chat and you may proceed to answer questions and requests based on those outputs.
     Tip: When you execute a command, the user may see the output, so you can make reference to it, but there is no need to repeat it in your answer. For example, if you execute a cat statement, there is no need to repeat the contents of the file in your answer after that.
     An important thing to know is that each shell command is independent, so instead of running for example "<$SHELL>cd some_path</$SHELL>" followed by "<$SHELL>ls</$SHELL>", you will probably need to do "<$SHELL>ls some_path</$SHELL>" or "<$SHELL>cd some_path && ls</$SHELL>" instead.
     In case this is useful, here is some information about the user's system: {os.uname()}. Also the user's username is {os.getlogin()}.
