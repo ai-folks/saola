@@ -88,11 +88,11 @@ to proceed with this approach?
 
 </details>
 
-### Context Management with `update_context()`
+### Updating The System Prompt
 
-As of the latest update, we've introduced the `update_context()` method to enable maintainers and developers to dynamically set or update the assistant's context during a conversation. This method is particularly useful for providing the assistant with persistent information or special instructions.
+You can edit the assistant's system prompt before starting your conversation. This functionality is particularly useful for providing the assistant with persistent information or special instructions.
 
-For instance, if you want the assistant to remember to run server processes in a "no hang up" mode, you could introduce this context as follows:
+For instance, if you want the assistant to use Canadian spelling of words in your conversation:
 
 ```python
 from saola.convo import Convo
@@ -102,18 +102,11 @@ from saola.model import OpenAIGPT4
 conversation = Convo(OpenAIGPT4(api_key=input("OpenAI API Key: ")))
 
 # Context to run server processes in a "no hang up" mode
-additional_context = """Remember to run server processes in a "no hang up" mode."""
+conversation.system << 'Use Canadian spelling of words in this conversation.'
 
-# Update the conversation context
-conversation.update_context(additional_context)
-
-# Continue the conversation loop with the new context
+# Start the conversation loop with the new context
 conversation.loop()
 ```
-
-By using `update_context()`, you ensure that your assistant's responses and actions take into account this specific directive throughout the interaction.
-
-
 
 ### Assistant With A Custom Interface
 
