@@ -126,9 +126,7 @@ import os
 
 class ExitInterface(Interface):
     name = "EXIT"
-    pattern_start = "{EXIT}"
-    pattern_end = os.linesep
-    explanation = "Whenever asked by the user, you may exit the chat by typing {EXIT} in its own line of text."
+    explanation = "This interface allows you exit the chat at any time."
     safety_checks = False
 
     def execute(self, code):
@@ -164,7 +162,8 @@ Please say "bye" and end the chat. Thanks.
 │ ASSISTANT                                                                                  │
 ╰────────────────────────────────────────────────────────────────────────────────────────────╯
 Bye! It was nice assisting you. 
-{EXIT}
+
+[__EXIT__] [/__EXIT__]
 %
 ```
 
