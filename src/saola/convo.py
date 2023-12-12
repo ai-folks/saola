@@ -109,11 +109,11 @@ class Interface:
 
 class ShellInterface(Interface):
     name = "SHELL"
-    pattern_start = "$> "
-    pattern_end = os.linesep
+    pattern_start = "[__SHELL__]"
+    pattern_end = "[/__SHELL__]" + os.linesep
     explanation = f"""
-    Whenever needed, you may turn to the user's shell console, by starting a line with "$> " to execute a command in it, followed by a line break. The output of this command will show up in the chat and you may proceed to answer questions and requests based on those outputs. Tip: When you execute a command, the user may see the output, so you can make reference to it, but there is no need to repeat it in your answer. For example, if you execute a cat statement, there is no need to repeat the contents of the file in your answer after that.
-    An important thing to know is that each shell command is independent, so instead of running for example "$> cd some_path" followed by "$> ls", you will probably need to do "$> ls some_path" or "$> cd some_path && ls" instead.
+    Whenever needed, you may turn to the user's shell console, by preceding a new shell command with "[__SHELL__]" and ending it with "[/__SHELL__]", followed by a line break. The output of this command will show up in the chat and you may proceed to answer questions and requests based on those outputs. Tip: When you execute a command, the user may see the output, so you can make reference to it, but there is no need to repeat it in your answer. For example, if you execute a cat statement, there is no need to repeat the contents of the file in your answer after that.
+    An important thing to know is that each shell command is independent, so instead of running for example "[__SHELL__]cd some_path[/__SHELL__]" followed by "[__SHELL__]ls[/__SHELL__]", you will probably need to do "[__SHELL__]ls some_path[/__SHELL__]" or "[__SHELL__]cd some_path && ls[/__SHELL__]" instead.
     In case this is useful, here is some information about the user's system: {os.uname()}. Also the user's username is {os.getlogin()}.
     """
     max_output_length = None
