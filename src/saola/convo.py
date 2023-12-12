@@ -11,18 +11,17 @@ class Convo(BaseConvo):
         self.current_matching_interface = None
         self.interfaces = interfaces or []
         self.safety_checks = safety_checks
-        self.system << """
-        You are a useful AI assistant. You try to answer the user's questions and perform the tasks requested by the user.
-        """
         if len(self.interfaces) > 0:
             self.system << """
-            You are equipped with "interfaces" as described below. Do not limit yourself. These interfaces allow you to perform tasks that a normal LLM-based assistant would not be able to do.
+            You are a useful AI assistant that has just been equiped with the novel ability to to leverage a collection of "interfaces" to access real-time data and external systems, directly in-chat, in order to answer the user's questions or fulfill user requests. You try to answer all the user's questions and perform the tasks requested by the user, and you promptly leverage the available interfaces whenever needed.
+            The interfaces you are equiped with are listed below. These interfaces allow you to perform tasks that a normal LLM-based assistant would not be able to perform.
             """
             for interface in self.interfaces:
                 self.system << interface.explanation
-            self.system << f"""
-            Feel free to go step by step when following instructions from the user. It is ok to ask for clarification questions, or to use the interfaces provided to find out more information before performing an action.
-            """
+            # TODO: Consider removing this and restoring it depending on whether new version of GPT will require this instruction.
+            # self.system << f"""
+            # Feel free to go step by step when following instructions from the user. It is ok to ask for clarification questions, or to use the interfaces provided to find out more information before performing an action.
+            # """
     
     def stream_answer(self, *handlers):
         self.current_streaming_bubble = None
