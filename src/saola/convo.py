@@ -11,18 +11,22 @@ class Convo(BaseConvo):
         self.current_matching_interface = None
         self.interfaces = interfaces or []
         self.safety_checks = safety_checks
-        self.system << """
-        You are a useful AI assistant. You try to answer the user's questions and perform the tasks requested by the user.
-        """
         if len(self.interfaces) > 0:
             self.system << """
-            You are equipped with "interfaces" as described below. Do not limit yourself. These interfaces allow you to perform tasks that a normal LLM-based assistant would not be able to do.
+            You are a useful AI assistant that has just been equiped with the novel ability to to leverage a collection of "interfaces" to access real-time data and external systems, directly in-chat, in order to answer the user's questions or fulfill user requests. You try to answer all the user's questions and perform the tasks requested by the user, and you promptly leverage the available interfaces whenever needed. These interfaces allow you to perform tasks that a normal LLM-based assistant would not be able to perform.
+            To trigger an interface, you start in a new line with [__INTERFACE_NAME__], followed by your command, ending with [/__INTERFACE_NAME__], followed by a line break. The output of this command will show up in the chat and you may proceed to answer questions and requests based on those outputs.
+            The available interfaces are listed below.
             """
             for interface in self.interfaces:
+                self.system << f"""
+                {interface.name} Interface:
+                [__{interface.name}__]...[/__{interface.name}__]
+                """
                 self.system << interface.explanation
-            self.system << f"""
-            Feel free to go step by step when following instructions from the user. It is ok to ask for clarification questions, or to use the interfaces provided to find out more information before performing an action.
-            """
+            # TODO: Consider removing this and restoring it depending on whether new version of GPT will require this instruction.
+            # self.system << f"""
+            # Feel free to go step by step when following instructions from the user. It is ok to ask for clarification questions, or to use the interfaces provided to find out more information before performing an action.
+            # """
     
     def stream_answer(self, *handlers):
         self.current_streaming_bubble = None
@@ -55,6 +59,14 @@ class Interface:
         self.pattern_start_pos = -1
         self.pattern_end_pos = -1
         self.current_code = None
+
+    @property
+    def pattern_start(self):
+        return f"[__{self.name}__]"
+    
+    @property
+    def pattern_end(self):
+        return f"[/__{self.name}__]" + os.linesep
 
     def execute(self, code):
         raise NotImplementedError()
@@ -110,17 +122,15 @@ class Interface:
 
 class ShellInterface(Interface):
     name = "SHELL"
-    pattern_start = "$> "
-    pattern_end = os.linesep
     explanation = f"""
-    Whenever needed, you may turn to the user's shell console, by starting a line with "$> " to execute a command in it, followed by a line break. The output of this command will show up in the chat and you may proceed to answer questions and requests based on those outputs. Tip: When you execute a command, the user may see the output, so you can make reference to it, but there is no need to repeat it in your answer. For example, if you execute a cat statement, there is no need to repeat the contents of the file in your answer after that.
-    An important thing to know is that each shell command is independent, so instead of running for example "$> cd some_path" followed by "$> ls", you will probably need to do "$> ls some_path" or "$> cd some_path && ls" instead.
+    This interface allows you to run commands on the user's shell console. For example you may execute the command "date" to retrieve the current time, or ping a website to check for internet connectivity. The output of your command will show up in the chat and you may proceed to answer questions and requests based on those outputs. Tip: When you execute a command, the user may see the output, so you can make reference to it, but there is no need to repeat it in your answer. For example, if you execute a cat statement, there is no need to repeat the contents of the file in your answer after that.
+    An important thing to know is that each shell command is independent, so instead of running for example "cd some_path" followed by "ls", you will probably need to do "ls some_path" or "cd some_path && ls" instead.
     In case this is useful, here is some information about the user's system: {os.uname()}. Also the user's username is {os.getlogin()}.
     """
     max_output_length = None
 
     def execute(self, code):
-        process = subprocess.Popen(code, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        process = subprocess.Popen(code.strip(), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = process.communicate()
         stdout = stdout.decode("utf-8")
         stderr = stderr.decode("utf-8")
@@ -131,15 +141,13 @@ class ShellInterface(Interface):
     
 class FileWriteInterface(Interface):
     name = "FILE_WRITE"
-    pattern_start = "$FILE_WRITE> "
-    pattern_end = os.linesep + "<FILE_WRITE$"
     explanation = """
-    Whenever needed, you may write a new file or replace the contents of a file in the user's filesystem, by starting a line with "$FILE_WRITE> " followed on the same line by the path to the file. The new contents of the file should start on the next line. After you are done typing the new contents of the file, you must end with a single line containing the text "<FILE_WRITE$". This will cause the file to be written to the filesystem of the user. Remember to always write the intended file content entirely. Avoid stubbing like "keep this part as is" as that would be written verbatim to the file.
+    This interface allows you to write a new file or replace the contents of a file in the user's filesystem. The first line of your command is the path to the file to be created or replaced. The new contents of the file should start on the next line. This will cause the file to be written to the filesystem of the user. Remember to always write the intended file content entirely. Avoid stubbing like "keep this part as is" as that would be written verbatim to the file.
     """
 
     def execute(self, code):
         try:
-            args = code.split(os.linesep, 1)
+            args = code.lstrip().split(os.linesep, 1)
             if len(args) == 1: args = args + [""]
             first_line, contents = args
             file_path = first_line.strip()

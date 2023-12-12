@@ -5,7 +5,7 @@ Saola is an open-source Python module that enables developers to **build their o
 To install Saola simply do:
 
 ```bash
-pip install git+https://github.com/ai-folks/saola.git@0.1.4
+pip install git+https://github.com/ai-folks/saola.git@0.1.5
 ```
 
 ## Assistant Without Interfaces
@@ -64,7 +64,9 @@ each other
 Sure, I can help you with that. To begin, I will list the files in your Documents folder and
 then check for duplicates. Let's start by listing the files.
 
-$> ls ~/Documents
+[__SHELL__]
+ls ~/Documents
+[/__SHELL__]
 ╭─────────────────────────────────────────────────────────────────────────────────────────────╮
 │ ...                                                                                         │
 ╰─────────────────────────────────────────────────────────────────────────────────────────────╯
