@@ -8,6 +8,14 @@ To install Saola simply do:
 pip install git+https://github.com/ai-folks/saola.git@0.1.5
 ```
 
+And to try out the state of the art Saola assistant (with `SHELL` and `FILE_WRITE` interfaces), do:
+
+```bash
+python -m saola.demo_loop
+```
+
+**Disclaimer**: This assistant is capable of executing shell commands and writing to files. It is intended for responsible use and should be employed with an understanding of the potential actions taken by the assistant.
+
 ## Assistant Without Interfaces
 
 The simplest example of a Saola assistant is one that mirrors the underlying LLM exactly (no special functionality, no interfaces):
