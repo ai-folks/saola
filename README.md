@@ -14,7 +14,7 @@ And to try out the state of the art Saola assistant (with `SHELL` and `FILE_WRIT
 python -m saola.demo_loop
 ```
 
-**Disclaimer**: This assistant is capable of executing shell commands and writing to files. It is intended for responsible use and should be employed with an understanding of the potential actions taken by the assistant.
+**Disclaimer**: This assistant is capable of executing shell commands and writing to files (you will be asked to confirm each action). It is intended for responsible use and should be employed with an understanding of the potential actions taken by the assistant.
 
 ## Assistant Without Interfaces
 
