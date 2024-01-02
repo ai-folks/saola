@@ -1,4 +1,4 @@
-from saola.convo import Convo, ShellInterface, FileWriteInterface
+from saola.convo import Convo, ShellInterface, FileShowInterface, FileWriteInterface
 from saola.model import OpenAIModel
 from rich.panel import Panel
 from rich.prompt import Prompt
@@ -47,6 +47,6 @@ def demo_loop():
     rprint(Panel("Using OpenAI model [bold]" + model_name + "[/bold]"))
     return Convo(
         OpenAIModel(model_name, client=client),
-        interfaces=[ShellInterface, FileWriteInterface],
+        interfaces=[ShellInterface, FileShowInterface, FileWriteInterface],
         safety_checks=True
     ).loop()

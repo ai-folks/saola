@@ -139,22 +139,57 @@ class ShellInterface(Interface):
         output = (stdout + stderr).rstrip('\n')
         return output
     
-class FileWriteInterface(Interface):
-    name = "FILE_WRITE"
+class FileShowInterface(Interface):
+    name = "FILE_SHOW"
     explanation = """
-    This interface allows you to write a new file or replace the contents of a file in the user's filesystem. The first line of your command is the path to the file to be created or replaced. The new contents of the file should start on the next line. This will cause the file to be written to the filesystem of the user. Remember to always write the intended file content entirely. Avoid stubbing like "keep this part as is" as that would be written verbatim to the file.
+    This interface allows you to show the contents of a file in the user's filesystem. The input of your command is the path to the file to be shown. Please avoid repeating the contents of the file in your message after using this interface, as the user will already see the contents of the file in the chat.
     """
 
     def execute(self, code):
         try:
-            args = code.lstrip().split(os.linesep, 1)
-            if len(args) == 1: args = args + [""]
-            first_line, contents = args
-            file_path = first_line.strip()
+            file_path = code.strip()
+            file_path = os.path.abspath(os.path.expanduser(file_path))
+            with open(file_path, "r") as f: contents = f.read()
+            result = ""
+            content_lines = contents.split(os.linesep)
+            max_line_number_size = len(str(len(content_lines)))
+            for (i, line) in enumerate(contents.split(os.linesep)):
+                line_number = " " * (max_line_number_size - len(str(i + 1))) + str(i + 1)
+                result += os.linesep + f"{line_number}  {line}"
+            return result.lstrip(os.linesep)
+        except Exception as e:
+            return f"ERROR: {e}"
+
+class FileWriteInterface(Interface):
+    name = "FILE_WRITE"
+    explanation = """
+    This interface allows you to write a new file or replace the contents of a file in the user's filesystem. The first line of your command is the path to the file to be created or replaced. The second line is the range of file lines to be replaced, e.g. 10-20, or the word ALL. The new contents of the file or of the replaced lines should start on the next line. This will cause the file to be written to the filesystem of the user.
+    """
+    def execute(self, code):
+        try:
+            args = code.lstrip().split(os.linesep, 2)
+            if len(args) == 1: args = args + ["ALL", ""]
+            elif len(args) == 2: args = args + [""]
+            file_path, line_range, contents = args
+            file_path = file_path.strip()
             file_path = os.path.abspath(os.path.expanduser(file_path))
             base_folder = os.path.dirname(file_path)
             if base_folder and not os.path.exists(base_folder): os.makedirs(base_folder)
+            current_contents = None
+            if os.path.exists(file_path):
+                with open(file_path, "r") as f: current_contents = f.read()
+            if line_range != "ALL":
+                start_line, end_line = [int(i) for i in line_range.split("-")]
+                lines = current_contents.split(os.linesep) if current_contents else []
+                lines = lines[:start_line - 1] + contents.strip(os.linesep).split(os.linesep) + lines[end_line:]
+                contents = os.linesep.join(lines)
             with open(file_path, "w") as f: f.write(contents)
-            return f"File written to {file_path}"
+            result = f"File written to {file_path}:"
+            content_lines = contents.split(os.linesep)
+            max_line_number_size = len(str(len(content_lines)))
+            for (i, line) in enumerate(contents.split(os.linesep)):
+                line_number = " " * (max_line_number_size - len(str(i + 1))) + str(i + 1)
+                result += os.linesep + f"{line_number}  {line}"
+            return result
         except Exception as e:
             return f"ERROR: {e}"
