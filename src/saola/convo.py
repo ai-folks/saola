@@ -34,22 +34,17 @@ class Convo(BaseConvo):
             for (bubble, chunk) in super().stream_answer(*[i(self) for i in self.interfaces], *handlers):
                 self.current_streaming_bubble = bubble
                 yield (bubble, chunk)
-            output = self.current_matching_interface._execute() if self.current_matching_interface else None
+            interface = self.current_matching_interface
+            meta = interface.meta if interface else None
+            output = interface._execute() if interface else None
             if output:
                 self.ui.display_interface_output(output)
-                self.current_streaming_bubble.doc.append_with_newline("-- OUTPUT --\n" + output + "\n-- END OUTPUT --")
+                self.bubble_maker(self.current_streaming_bubble.author, meta=meta or self.current_streaming_bubble.meta) << \
+                    "-- OUTPUT --\n" + output + "\n-- END OUTPUT --"
+                interface.cleanup()
             else:
                 break
         self.current_streaming_bubble = None
-
-     # Method for updating context
-    def update_context(self, new_context):
-        """
-        Updates the system's conversation context with new information.
-        
-        :param new_context: A string that contains the new context to be added.
-        """
-        self.system << new_context
 
 class Interface:
     safety_checks = True
@@ -59,6 +54,7 @@ class Interface:
         self.pattern_start_pos = -1
         self.pattern_end_pos = -1
         self.current_code = None
+        self.meta = {'interface': self.name}
 
     @property
     def pattern_start(self):
@@ -119,6 +115,9 @@ class Interface:
         new_text = full_text[:self.pattern_end_pos + len(self.pattern_end)]
         new_chunk = new_text[len(text):].rstrip(os.linesep)
         return R(chunk=new_chunk, should_yield=True, should_continue=False)
+    
+    def cleanup(self):
+        pass
 
 class ShellInterface(Interface):
     name = "SHELL"
@@ -142,23 +141,36 @@ class ShellInterface(Interface):
 class FileShowInterface(Interface):
     name = "FILE_SHOW"
     explanation = """
-    This interface allows you to show the contents of a file in the user's filesystem. The input of your command is the path to the file to be shown. Please avoid repeating the contents of the file in your message after using this interface, as the user will already see the contents of the file in the chat.
+    This interface allows you to show the contents of a file in the user's filesystem. The input of your command is the path to the file to be shown. The file will be shown with line numbers. Please avoid repeating the contents of the file in your message after using this interface, as the user will already see the contents of the file in the chat.
     """
 
     def execute(self, code):
         try:
             file_path = code.strip()
             file_path = os.path.abspath(os.path.expanduser(file_path))
+            self.meta['file_path'] = file_path
             with open(file_path, "r") as f: contents = f.read()
-            result = ""
+            result = f"File {file_path} (shown below with line numbers):"
             content_lines = contents.split(os.linesep)
             max_line_number_size = len(str(len(content_lines)))
             for (i, line) in enumerate(contents.split(os.linesep)):
                 line_number = " " * (max_line_number_size - len(str(i + 1))) + str(i + 1)
                 result += os.linesep + f"{line_number}  {line}"
-            return result.lstrip(os.linesep)
+            return result
         except Exception as e:
             return f"ERROR: {e}"
+        
+    def cleanup(self):
+        file_paths = set()
+        for bubble in reversed(self.convo.bubbles):
+            if not bubble.meta or bubble.meta.get('interface') not in ["FILE_SHOW", "FILE_WRITE"]: continue
+            if bubble.meta.get('cleaned_up'): break
+            file_path = bubble.meta['file_path']
+            if file_path in file_paths:
+                bubble.doc.text = "[OUTPUT HIDDEN]"
+                bubble.meta['cleaned_up'] = True
+            else:
+                file_paths.add(file_path)
 
 class FileWriteInterface(Interface):
     name = "FILE_WRITE"
@@ -173,18 +185,20 @@ class FileWriteInterface(Interface):
             file_path, line_range, contents = args
             file_path = file_path.strip()
             file_path = os.path.abspath(os.path.expanduser(file_path))
+            self.meta['file_path'] = file_path
             base_folder = os.path.dirname(file_path)
             if base_folder and not os.path.exists(base_folder): os.makedirs(base_folder)
             current_contents = None
             if os.path.exists(file_path):
                 with open(file_path, "r") as f: current_contents = f.read()
             if line_range != "ALL":
-                start_line, end_line = [int(i) for i in line_range.split("-")]
+                range = line_range.split("-")
+                start_line, end_line = [int(i) for i in range] if len(range) == 2 else [int(line_range), int(line_range)]
                 lines = current_contents.split(os.linesep) if current_contents else []
                 lines = lines[:start_line - 1] + contents.strip(os.linesep).split(os.linesep) + lines[end_line:]
                 contents = os.linesep.join(lines)
             with open(file_path, "w") as f: f.write(contents)
-            result = f"File written to {file_path}:"
+            result = f"File written to {file_path} (shown below with line numbers):"
             content_lines = contents.split(os.linesep)
             max_line_number_size = len(str(len(content_lines)))
             for (i, line) in enumerate(contents.split(os.linesep)):
@@ -193,3 +207,15 @@ class FileWriteInterface(Interface):
             return result
         except Exception as e:
             return f"ERROR: {e}"
+        
+    def cleanup(self):
+        file_paths = set()
+        for bubble in reversed(self.convo.bubbles):
+            if not bubble.meta or bubble.meta.get('interface') not in ["FILE_SHOW", "FILE_WRITE"]: continue
+            if bubble.meta.get('cleaned_up'): break
+            file_path = bubble.meta['file_path']
+            if file_path in file_paths:
+                bubble.doc.text = "[OUTPUT HIDDEN]"
+                bubble.meta['cleaned_up'] = True
+            else:
+                file_paths.add(file_path)
