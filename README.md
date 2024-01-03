@@ -34,12 +34,12 @@ Convo(OpenAIGPT4(api_key=input("OpenAI API Key: "))).loop()
 This module ships with a built-in interface that enables an assistant to access the user's shell, as well as an interface that allows the assistant to write a new file or overwrite an existing one, as requested by the user. To test these capabilities, initiate an `Convo` loop as below:
 
 ```python
-from saola.convo import Convo, ShellInterface, FileWriteInterface
+from saola.convo import Convo, ShellInterface, FileShowInterface, FileWriteInterface
 from saola.model import OpenAIGPT4
 
 Convo(
     OpenAIGPT4(api_key=input("OpenAI API Key: ")),
-    interfaces=[ShellInterface, FileWriteInterface]
+    interfaces=[ShellInterface, FileShowInterface, FileWriteInterface]
 ).loop()
 ```
 
