@@ -142,14 +142,18 @@ class FileShowInterface(Interface):
     name = "FILE_SHOW"
     explanation = """
     This interface allows you to show the contents of a file in the user's filesystem. The input of your command is the path to the file to be shown. The file will be shown with line numbers. Please avoid repeating the contents of the file in your message after using this interface, as the user will already see the contents of the file in the chat.
+
+    As mentioned above, the output of the FILE_SHOW command is the selected file with its line numbers.
+
+    It is advisable to run a FILE_SHOW before running any FILE_WRITE command (see the FILE_WRITE interface below).
     """
 
     def execute(self, code):
         try:
             file_path = code.strip()
             file_path = os.path.abspath(os.path.expanduser(file_path))
-            self.meta['file_path'] = file_path
             with open(file_path, "r") as f: contents = f.read()
+            self.meta['file_path'] = file_path
             result = f"File {file_path} (shown below with line numbers):"
             content_lines = contents.split(os.linesep)
             max_line_number_size = len(str(len(content_lines)))
@@ -165,7 +169,8 @@ class FileShowInterface(Interface):
         for bubble in reversed(self.convo.bubbles):
             if not bubble.meta or bubble.meta.get('interface') not in ["FILE_SHOW", "FILE_WRITE"]: continue
             if bubble.meta.get('cleaned_up'): break
-            file_path = bubble.meta['file_path']
+            file_path = bubble.meta.get('file_path')
+            if not file_path: continue
             if file_path in file_paths:
                 bubble.doc.text = "[OUTPUT HIDDEN]"
                 bubble.meta['cleaned_up'] = True
@@ -176,16 +181,96 @@ class FileWriteInterface(Interface):
     name = "FILE_WRITE"
     explanation = """
     This interface allows you to write a new file or replace the contents of a file in the user's filesystem. The first line of your command is the path to the file to be created or replaced. The second line is the range of file lines to be replaced, e.g. 10-20, or the word ALL. The new contents of the file or of the replaced lines should start on the next line. This will cause the file to be written to the filesystem of the user.
+
+    The output of the FILE_WRITE command is the full selected file with its line numbers. Always refer to the latest output of the FILE_SHOW command or of the FILE_WRITE command to see the current contents of the file. This allows you to make iterative changes to a file by specifying the correct line numbers every time.
+
+    For example, the command below creates a file with letters A-Z, one in each line, some of them skipped:
+
+    [__FILE_WRITE__]
+    path/to/file.txt
+    A
+    B
+    (skipped some
+     letters)
+    I
+    J
+    (skipped some letters)
+    [/__FILE_WRITE__]
+    [OUTPUT]
+    File written to path/to/file.txt (shown below with line numbers):
+    1  A
+    2  B
+    3  (skipped some
+    4   letters)
+    5  I
+    6  J
+    7  (skipped some letters)
+    [END OF OUTPUT]
+
+    Then the command below inserts the missing letters C-H:
+
+    [__FILE_WRITE__]
+    path/to/file.txt
+    3-4
+    C
+    D
+    E
+    F
+    G
+    H
+    [/__FILE_WRITE__]
+    [OUTPUT]
+    File written to path/to/file.txt (shown below with line numbers):
+     1  A
+     2  B
+     3  C
+     4  D
+     5  E
+     6  F
+     7  G
+     8  H
+     9  I
+    10  J
+    11  (skipped some letters)
+    [END OF OUTPUT]
+
+    Now if you want to insert a couple more letters after J, and keep the "(skipped some letters)" line, you must remember that you need to rewrite any line that you want to keep (because the FILE_WRITE interface always performs a replace operation). So you would do:
+
+    [__FILE_WRITE__]
+    path/to/file.txt
+    11-11
+    K
+    L
+    M
+    (skipped some letters)
+    [/__FILE_WRITE__]
+    [OUTPUT]
+    File written to path/to/file.txt (shown below with line numbers):
+     1  A
+     2  B
+     3  C
+     4  D
+     5  E
+     6  F
+     7  G
+     8  H
+     9  I
+    10  J
+    11  K
+    12  L
+    13  M
+    14  (skipped some letters)
+    [END OF OUTPUT]
     """
     def execute(self, code):
         try:
             args = code.lstrip().split(os.linesep, 2)
-            if len(args) == 1: args = args + ["ALL", ""]
-            elif len(args) == 2: args = args + [""]
+            assert len(args) == 3, "Remember the first line of the FILE_WRITE arguments must be the file path, the second line is the line range (or the word ALL), and on the third line starts the new content of the file."
+            # if len(args) == 1: args = args + ["ALL", ""]
+            # elif len(args) == 2: args = args + [""]
             file_path, line_range, contents = args
             file_path = file_path.strip()
             file_path = os.path.abspath(os.path.expanduser(file_path))
-            self.meta['file_path'] = file_path
             base_folder = os.path.dirname(file_path)
             if base_folder and not os.path.exists(base_folder): os.makedirs(base_folder)
             current_contents = None
@@ -198,6 +283,7 @@ class FileWriteInterface(Interface):
                 lines = lines[:start_line - 1] + contents.strip(os.linesep).split(os.linesep) + lines[end_line:]
                 contents = os.linesep.join(lines)
             with open(file_path, "w") as f: f.write(contents)
+            self.meta['file_path'] = file_path
             result = f"File written to {file_path} (shown below with line numbers):"
             content_lines = contents.split(os.linesep)
             max_line_number_size = len(str(len(content_lines)))
@@ -213,7 +299,8 @@ class FileWriteInterface(Interface):
         for bubble in reversed(self.convo.bubbles):
             if not bubble.meta or bubble.meta.get('interface') not in ["FILE_SHOW", "FILE_WRITE"]: continue
             if bubble.meta.get('cleaned_up'): break
-            file_path = bubble.meta['file_path']
+            file_path = bubble.meta.get('file_path')
+            if not file_path: continue
             if file_path in file_paths:
                 bubble.doc.text = "[OUTPUT HIDDEN]"
                 bubble.meta['cleaned_up'] = True
