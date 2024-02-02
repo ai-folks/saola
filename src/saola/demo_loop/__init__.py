@@ -1,4 +1,4 @@
-from saola.convo import Convo, ShellInterface, FileShowInterface, FileWriteInterface
+from saola.convo import Convo, ShellInterface, FileShowInterface, FileWriteInterface, SearchInterface, PythonInterface
 from saola.model import OpenAIModel
 from saola.ui import ShellUI, NotebookUI
 from rich.panel import Panel
@@ -62,13 +62,13 @@ def demo_loop():
         return Convo(
             OpenAIModel(model_name, client=client),
             ui=NotebookUI(),
-            interfaces=[ShellInterface, FileShowInterface, FileWriteInterface],
+            interfaces=[ShellInterface, FileShowInterface, FileWriteInterface, SearchInterface, PythonInterface],
             safety_checks=True
         ).start()
     else:
         return Convo(
             OpenAIModel(model_name, client=client),
             ui=ShellUI(),
-            interfaces=[ShellInterface, FileShowInterface, FileWriteInterface],
+            interfaces=[ShellInterface, FileShowInterface, FileWriteInterface, SearchInterface, PythonInterface],
             safety_checks=True
         ).loop()

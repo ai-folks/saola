@@ -3,7 +3,6 @@ import subprocess
 from saola.base_convo import BaseConvo
 from saola.model import R
 
-
 class Convo(BaseConvo):
     def __init__(self, model, *, ui=None, interfaces=None, safety_checks=True):
         super().__init__(model, ui=ui)
@@ -48,6 +47,7 @@ class Convo(BaseConvo):
 
 class Interface:
     safety_checks = True
+    empty_output = "<empty output>"
 
     def __init__(self, convo):
         self.convo = convo
@@ -72,7 +72,7 @@ class Interface:
         if self.current_code is None: return None
         if ((not self.safety_checks or not self.convo.safety_checks) and self.convo.ui.no_safety_confirmation()) \
            or self.convo.ui.safety_confirmation(f"[red1] Execute {self.name} code? [/red1]"):
-            output = self.execute(self.current_code) or "<empty output>"
+            output = self.execute(self.current_code) or self.empty_output
         else:
             output = f"The user prevented this {self.name} code from running. This was a manual action and not an error of the code itself. The user may have an explanation for their decision."
         return output
@@ -138,6 +138,21 @@ class ShellInterface(Interface):
         output = (stdout + stderr).rstrip('\n')
         return output
     
+class PythonInterface(Interface):
+    name = "PYTHON"
+    explanation = """
+    This interface allows you to run Python code. The input of your command is the Python code to be executed, in an isolated scope. The output of your command is the result of the Python code. You may use this interface to perform calculations, manipulate data, or run any Python code that you need. The stdout (e.g. outputs of print calls) and stderr of your code will show up in the chat and you may proceed to answer questions and requests based on those outputs. An empty output usually means the code ran successfully. Things like charts and plots are supported by this interface, and they are visible to the user even if they are not visible to you. You can do multiple things and display multiple charts in one same Python code, if necessary.
+    """
+    empty_output = "Empty output. This normally means the code ran successfully."
+
+    def execute(self, code):
+        try:
+            from langchain_experimental.utilities import PythonREPL
+            repl = PythonREPL()
+        except Exception as e:
+            return f"ERROR: {e}"
+        return repl.run(code.strip())
+    
 class FileShowInterface(Interface):
     name = "FILE_SHOW"
     explanation = """
@@ -176,6 +191,21 @@ class FileShowInterface(Interface):
                 bubble.meta['cleaned_up'] = True
             else:
                 file_paths.add(file_path)
+
+class SearchInterface(Interface):
+    name = "SEARCH"
+    explanation = """
+    This interface allows you to search the web for information. The input of your command is the search query. The output of your command is the search results, which may be a single string answering your query or a list of truncated results.
+    """
+
+    def execute(self, code):
+        try:
+            from langchain_community.utilities import SerpAPIWrapper
+            search = SerpAPIWrapper()
+            return search.run(code.strip())
+        except Exception as e:
+                return f"ERROR: {e}"
+
 
 class FileWriteInterface(Interface):
     name = "FILE_WRITE"
@@ -306,3 +336,8 @@ class FileWriteInterface(Interface):
                 bubble.meta['cleaned_up'] = True
             else:
                 file_paths.add(file_path)
+
+
+                
+
+
