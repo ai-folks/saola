@@ -52,4 +52,30 @@ class ShellUI(UI):
 
     def append_to_assistant_output(self, author, chunk, ending):
         print(chunk or "", end="\n" if ending else "")
+
+
+class NotebookUI(UI):
+    def display_interface_output(self, output):
+        rprint(Panel("[bright_magenta]" + escape(output) + "[/bright_magenta]", border_style="bright_magenta"))
+
+    def safety_confirmation(self, question):
+        print("")
+        rprint(Panel("[red1] SAFETY CHECK [/red1]", border_style="red1"))
+        return Confirm.ask(f"[red1] {question} [/red1]")
+
+    def no_safety_confirmation(self):
+        print("")
+        return True 
+
+    def display_user_header(self):
+        rprint(Panel("[bold green]USER (use saola.convo << \"...\")[/bold green]"))
+
+    def get_user_input(self):
+        raise NotImplementedError("The Notebook UI does not support synchronous user input.")
+
+    def display_assistant_header(self):
+        rprint(Panel("[bold blue]ASSISTANT[/bold blue]"))
+
+    def append_to_assistant_output(self, author, chunk, ending):
+        print(chunk or "", end="\n" if ending else "")
     
