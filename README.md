@@ -11,7 +11,7 @@ pip install git+https://github.com/ai-folks/saola.git@1.0.0
 And to try out the state of the art Saola assistant (with `SHELL` and `FILE_WRITE` interfaces), do:
 
 ```bash
-python -m saola.self
+python -m saola.start
 ```
 
 **Disclaimer**: This assistant is capable of executing shell commands and writing to files (you will be asked to confirm each action). It is intended for responsible use and should be employed with an understanding of the potential actions taken by the assistant.
