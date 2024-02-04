@@ -94,7 +94,10 @@ class NotebookUI(UI):
         <script>
         var cell_index = Jupyter.notebook.get_selected_index();
         var cell = Jupyter.notebook.get_cell(cell_index);
-        cell.set_text("saola.convo << \\\"\\\"\\\"\\n\\n\\\"\\\"\\\"");
+        // Only if cell text is empty
+        if (cell.get_text() === "") {
+            cell.set_text("saola.convo << \\\"\\\"\\\"\\n\\n\\\"\\\"\\\"");
+        }
         cell.render();
         Jupyter.notebook.select(cell_index);
         Jupyter.notebook.edit_mode();
