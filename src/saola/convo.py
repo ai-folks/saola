@@ -1,5 +1,7 @@
 import os
+import sys
 import subprocess
+from io import StringIO
 from saola.base_convo import BaseConvo
 from saola.model import R
 
@@ -137,21 +139,44 @@ class ShellInterface(Interface):
         if self.max_output_length and len(stderr) > self.max_output_length: stderr = stderr[:self.max_output_length].rstrip("\n") + "\n-- STDERR TRIMMED FOR BEING TOO LONG --"
         output = (stdout + stderr).rstrip('\n')
         return output
-    
+
+
+class StringAndPrintIO:
+    """
+    An IO that both prints to the stdout and stores the output in a string.
+    """
+    def __init__(self, stdout):
+        self.stdout = stdout
+        self.string_io = StringIO()
+
+    def write(self, s):
+        self.stdout.write(s)
+        self.string_io.write(s)
+
+    def flush(self):
+        self.stdout.flush()
+        self.string_io.flush()
+
+    def getvalue(self):
+        return self.string_io.getvalue()
+
+
 class PythonInterface(Interface):
     name = "PYTHON"
     explanation = """
-    This interface allows you to run Python code. The input of your command is the Python code to be executed, in an isolated scope. The output of your command is the result of the Python code. You may use this interface to perform calculations, manipulate data, or run any Python code that you need. The stdout (e.g. outputs of print calls) and stderr of your code will show up in the chat and you may proceed to answer questions and requests based on those outputs. An empty output usually means the code ran successfully. Things like charts and plots are supported by this interface, and they are visible to the user even if they are not visible to you. You can do multiple things and display multiple charts in one same Python code, if necessary.
+    This interface allows you to run Python code. The input of your command is the Python code to be executed, in an isolated scope. The output of your command is the result of the Python code. You may use this interface to perform calculations, manipulate data, or run any Python code that you need. The stdout (e.g. outputs of print calls) and stderr of your code will show up in the chat and you may proceed to answer questions and requests based on those outputs. An empty output usually means the code ran successfully. If you need the result of a calculation or of an algorithm to answer a user query, you will need to print it. Things like charts and plots are supported by this interface, and they are visible to the user even if they are not visible to you. You can do multiple things and display multiple charts in one same Python code, if necessary.
     """
     empty_output = "Empty output. This normally means the code ran successfully."
 
     def execute(self, code):
         try:
-            from langchain_experimental.utilities import PythonREPL
-            repl = PythonREPL()
+            old_stdout = sys.stdout
+            sys.stdout = new_stdout = StringAndPrintIO(old_stdout)
+            exec(code.strip(), globals())
+            sys.stdout = old_stdout
+            return new_stdout.getvalue().rstrip()
         except Exception as e:
             return f"ERROR: {e}"
-        return repl.run(code.strip())
     
 class FileShowInterface(Interface):
     name = "FILE_SHOW"

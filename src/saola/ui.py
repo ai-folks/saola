@@ -4,6 +4,18 @@ from rich import print as rprint
 from rich.markup import escape
 from rich.prompt import Confirm
 
+def _is_notebook() -> bool:
+    try:
+        shell = get_ipython().__class__.__name__  # type: ignore
+        if shell == 'ZMQInteractiveShell':
+            return True   # Jupyter notebook or qtconsole
+        elif shell == 'TerminalInteractiveShell':
+            return False  # Terminal running IPython
+        else:
+            return False  # Other type (?)
+    except NameError:
+        return False      # Probably standard Python interpreter
+
 class UI(abc.ABC):
     # A UI is a bridge for the application to communicate with the user.
     def display_interface_output(self, output):
@@ -17,6 +29,9 @@ class UI(abc.ABC):
         pass
     def display_user_header(self):
         # Preparation for requesting the user's input.
+        pass
+    def supports_synchronous_user_input(self):
+        # Returns True if the UI can get the user's input synchronously.
         pass
     def get_user_input(self):
         # Gets the user's input.
@@ -44,6 +59,9 @@ class ShellUI(UI):
     def display_user_header(self):
         rprint(Panel("[bold green]USER (enter your question below)[/bold green]"))
 
+    def supports_synchronous_user_input(self):
+        return True
+
     def get_user_input(self):
         return input("")
 
@@ -68,7 +86,31 @@ class NotebookUI(UI):
         return True 
 
     def display_user_header(self):
-        rprint(Panel("[bold green]USER (use saola.convo << \"...\")[/bold green]"))
+        rprint(Panel("[bold green]USER (type saola.convo << \"your message\")[/bold green]"))
+        # Add a JavaScript code that finds the next cell and focuses on it,
+        # and sets the text to 'saola.convo << """\n\n"""' and places the caret between the line breaks
+        from IPython.display import display, HTML
+        display(HTML("""
+        <script>
+        var cell_index = Jupyter.notebook.get_selected_index();
+        var cell = Jupyter.notebook.get_cell(cell_index);
+        cell.set_text("saola.convo << \\\"\\\"\\\"\\n\\n\\\"\\\"\\\"");
+        cell.render();
+        Jupyter.notebook.select(cell_index);
+        Jupyter.notebook.edit_mode();
+        </script>
+        """))
+        # display(HTML("""
+        # <script>
+        # var cell = Jupyter.notebook.get_selected_index() + 1;
+        # Jupyter.notebook.select(cell);
+        # Jupyter.notebook.edit_mode();
+        # </script>
+        # """))
+
+
+    def supports_synchronous_user_input(self):
+        return False
 
     def get_user_input(self):
         raise NotImplementedError("The Notebook UI does not support synchronous user input.")
@@ -78,4 +120,7 @@ class NotebookUI(UI):
 
     def append_to_assistant_output(self, author, chunk, ending):
         print(chunk or "", end="\n" if ending else "")
+
+
+DefaultUI = NotebookUI if _is_notebook() else ShellUI
     

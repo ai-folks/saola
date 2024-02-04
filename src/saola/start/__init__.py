@@ -1,6 +1,6 @@
 from saola.convo import Convo, ShellInterface, FileShowInterface, FileWriteInterface, SearchInterface, PythonInterface
 from saola.model import OpenAIModel
-from saola.ui import ShellUI, NotebookUI
+from saola.ui import DefaultUI
 from rich.panel import Panel
 from rich.prompt import Prompt
 from rich import print as rprint
@@ -26,19 +26,7 @@ import os
 # This file is likely to experience lots of breaking changes in the future.
 # Do not have your project depend on it.
 
-def _is_notebook() -> bool:
-    try:
-        shell = get_ipython().__class__.__name__  # type: ignore
-        if shell == 'ZMQInteractiveShell':
-            return True   # Jupyter notebook or qtconsole
-        elif shell == 'TerminalInteractiveShell':
-            return False  # Terminal running IPython
-        else:
-            return False  # Other type (?)
-    except NameError:
-        return False      # Probably standard Python interpreter
-
-def demo_loop():
+def start(safety_checks=True):
     rprint(Panel("[red1] [!] This assistant will be able to execute commands\n" +
                         "    on your shell when prompted. You will be asked to\n" +
                         "    confirm the execution of each of these commands.\n" + 
@@ -58,17 +46,9 @@ def demo_loop():
     if model_name is None:
         model_name = Prompt.ask("Choose an OpenAI model", choices=available_model_names)
     rprint(Panel("Using OpenAI model [bold]" + model_name + "[/bold]"))
-    if _is_notebook():
-        return Convo(
-            OpenAIModel(model_name, client=client),
-            ui=NotebookUI(),
-            interfaces=[ShellInterface, FileShowInterface, FileWriteInterface, SearchInterface, PythonInterface],
-            safety_checks=True
-        ).start()
-    else:
-        return Convo(
-            OpenAIModel(model_name, client=client),
-            ui=ShellUI(),
-            interfaces=[ShellInterface, FileShowInterface, FileWriteInterface, SearchInterface, PythonInterface],
-            safety_checks=True
-        ).loop()
+    return Convo(
+        OpenAIModel(model_name, client=client),
+        ui=DefaultUI(),
+        interfaces=[ShellInterface, FileShowInterface, FileWriteInterface, SearchInterface, PythonInterface],
+        safety_checks=safety_checks
+    ).loop()

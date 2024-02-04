@@ -2,14 +2,14 @@ import uuid
 import saola
 from saola.doc import Doc
 from functools import partial
-from saola.ui import ShellUI
+from saola.ui import DefaultUI
 
 class BaseConvo:
     def __init__(self, model=None, ui=None):
         self.bubbles = []
         self.checkpoints = []
         self.model = model() if isinstance(model, type) else model
-        self.ui = ui or ShellUI()
+        self.ui = ui or DefaultUI()
 
     @property
     def system(self):
@@ -80,25 +80,21 @@ class BaseConvo:
         self.bubbles = self.bubbles[:checkpoint]
 
     def loop(self):
-        with self:
-            while True:
-                self.ui.display_user_header()
-                self.user << self.ui.get_user_input()
-                self.ui.display_assistant_header()
-                self.stream_answer_to_end(self.ui.append_to_assistant_output)
-
-    def start(self):
-        with self:
-            self.ui.display_user_header()
         saola.convo = self
+        self.ui.display_user_header()
+        while True:
+            if self.ui.supports_synchronous_user_input():
+                user_input = self.ui.get_user_input()
+                self.append_user_input(user_input)
+            else:
+                break
 
     def append_user_input(self, user_input):
-        with self:
-            self.user << user_input
-            self.ui.display_assistant_header()
-            self.stream_answer_to_end(self.ui.append_to_assistant_output)
-        saola.convo = self
-
+        self.user << user_input
+        self.ui.display_assistant_header()
+        self.stream_answer_to_end(self.ui.append_to_assistant_output)
+        self.ui.display_user_header()
+        
     # Support for << operator
     def __lshift__(self, user_input):
         self.append_user_input(user_input)
