@@ -1,6 +1,12 @@
-# Saola - A Simple Framework For Building Powerful AI Assistants
+# Saola - A Powerful AI Assistant Framework
 
-Saola is an open-source Python module that enables developers to **build their own AI assistant** upon existing Large Language Model (LLM) APIs, by writing very little additional code. Saola conversations **function almost exactly like conversations with the underlying LLMs**. The only difference is that Saola assistants can be configured to **leverage certain _interfaces_** by way of special syntaxes.
+**Saola is an AI assistant**, as well as an open-source Python module that enables developers to build their own AI assistant upon existing Large Language Model (LLM) APIs. Unlike other frameworks, Saola leverages external interfaces when needed within the assistant's own messages. This conversational paradigm makes Saola able to perform more complex tasks that may involve diverse tooling or user input, after minimal prompting.
+
+In the example below, the default Saola assistant is asked to _show three Canadian cities on a map with the name and age of their current mayors_. Saola breezes through multiple web searches, troubleshoots an API error, and completes the task autonomously. State-of-the-art assistants like ChatGPT Plus often struggle with this type of task, giving up easily and inserting placeholder data whenever first attempts fail.
+
+https://github.com/ai-folks/saola/assets/8546027/e6ec2204-824c-4e49-828f-70361c6836a7
+
+## Getting Started
 
 To install Saola simply do:
 
@@ -8,15 +14,22 @@ To install Saola simply do:
 pip install git+https://github.com/ai-folks/saola.git@1.0.0
 ```
 
-And to try out the state of the art Saola assistant (with `SHELL`, `FILE_WRITE` and `PYTHON` interfaces), do:
+And to try out the default Saola assistant (with `SHELL`, `FILE_WRITE` and `PYTHON` interfaces), do:
 
 ```bash
 python -m saola.start
 ```
 
-**Disclaimer**: This assistant is capable of executing shell commands and writing to files (you will be asked to confirm each action). It is intended for responsible use and should be employed with an understanding of the potential actions taken by the assistant.
+Or in a Python console or Jupyter notebook:
 
-## Assistant Without Interfaces
+```python
+import saola
+saola.start()  # Alternatively saola.start(safety_checks=False) (use this at your own risk)
+```
+
+**Disclaimer**: This assistant is capable of executing shell commands and writing to files (you will be asked to confirm each action if you do not disable safety checks). It is intended for responsible use and should be employed with an understanding of the potential actions taken by the assistant.
+
+## Development - Assistant Without Interfaces
 
 The simplest example of a Saola assistant is one that mirrors the underlying LLM exactly (no special functionality, no interfaces):
 
@@ -27,7 +40,7 @@ from saola.model import OpenAIGPT4
 Convo(OpenAIGPT4(api_key=input("OpenAI API Key: "))).loop()
 ```
 
-## Assistant With Interfaces
+## Development - Assistant With Interfaces
 
 ### Assistant With Built-In Terminal Access
 
@@ -108,11 +121,7 @@ from saola.model import OpenAIGPT4
 
 # Create a conversation instance
 conversation = Convo(OpenAIGPT4(api_key=input("OpenAI API Key: ")))
-
-# Context to run server processes in a "no hang up" mode
 conversation.system << 'Use Canadian spelling of words in this conversation.'
-
-# Start the conversation loop with the new context
 conversation.loop()
 ```
 
@@ -172,4 +181,4 @@ Bye! It was nice assisting you.
 
 ## Custom UIs
 
-A custom UI may be constructed by subclassing the `UI` class. Details and examples to come.
+A custom UI may be constructed by subclassing the `UI` class. Currently there is a `ShellUI` and a `NotebookUI`. Details and custom UI examples to come.
