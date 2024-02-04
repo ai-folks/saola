@@ -1,6 +1,6 @@
 # Saola - A Powerful AI Assistant Framework
 
-**Saola is an AI assistant**, as well as an open-source Python module that enables developers to build their own AI assistant upon existing Large Language Model (LLM) APIs. Unlike other frameworks, Saola leverages external interfaces when needed within the assistant's own messages. This conversational paradigm makes Saola able to perform more complex tasks that may involve diverse tooling or user input, after minimal prompting.
+**Saola is an AI assistant**, as well as an open-source Python module that enables developers to build their own AI assistants. Unlike other frameworks, Saola leverages external interfaces within the assistant's own messages. This conversational paradigm enables it to perform more complex tasks that may involve diverse tooling or user input, after minimal prompting.
 
 In the example below, the default Saola assistant is asked to _show three Canadian cities on a map with the name and age of their current mayors_. Saola breezes through multiple web searches, troubleshoots an API error, and completes the task autonomously. State-of-the-art assistants like ChatGPT Plus often struggle with this type of task, giving up easily and inserting placeholder data whenever first attempts fail.
 
