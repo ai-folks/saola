@@ -8,7 +8,7 @@ To install Saola simply do:
 pip install git+https://github.com/ai-folks/saola.git@1.0.0
 ```
 
-And to try out the state of the art Saola assistant (with `SHELL` and `FILE_WRITE` interfaces), do:
+And to try out the state of the art Saola assistant (with `SHELL`, `FILE_WRITE` and `PYTHON` interfaces), do:
 
 ```bash
 python -m saola.start
