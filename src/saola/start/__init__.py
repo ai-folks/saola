@@ -26,13 +26,9 @@ import os
 # This file is likely to experience lots of breaking changes in the future.
 # Do not have your project depend on it.
 
-def start(safety_checks=True):
-    rprint(Panel("[red1] [!] This assistant will be able to execute commands\n" +
-                        "    on your shell when prompted. You will be asked to\n" +
-                        "    confirm the execution of each of these commands.\n" + 
-                        "    Please read each command and respond carefully.\n" +
-                        "    Use at your own risk.[/red1]", border_style="red1"))
-    
+def start(safety_checks=True, show_warning=True, show_model_info=True):
+    ui = DefaultUI()
+    if show_warning: ui.show_warning()
     open_ai_api_key = os.getenv("OPENAI_API_KEY") or input("OpenAI API Key: ")
     open_ai_api_base = os.getenv("OPENAI_API_BASE")
     client = OpenAI(api_key=open_ai_api_key, base_url=open_ai_api_base)
@@ -45,10 +41,10 @@ def start(safety_checks=True):
         break
     if model_name is None:
         model_name = Prompt.ask("Choose an OpenAI model", choices=available_model_names)
-    rprint(Panel("Using OpenAI model [bold]" + model_name + "[/bold]"))
+    if show_model_info: ui.show_info("Using OpenAI model " + model_name)
     return Convo(
         OpenAIModel(model_name, client=client),
-        ui=DefaultUI(),
+        ui=ui,
         interfaces=[ShellInterface, FileShowInterface, FileWriteInterface, SearchInterface, PythonInterface],
         safety_checks=safety_checks
     ).loop()

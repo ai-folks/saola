@@ -21,7 +21,7 @@ class UI(abc.ABC):
     def display_interface_output(self, output):
         # Displays an interface's output to the user.
         pass
-    def safety_confirmation(self, question):
+    def safety_confirmation(self, name):
         # Asks the user a yes/no question and returns the answer.
         pass
     def no_safety_confirmation(self):
@@ -42,15 +42,21 @@ class UI(abc.ABC):
     def append_to_assistant_output(self, author, chunk, ending):
         # Appends text to the assistant's output.
         pass
+    def show_warning(self, text=None):
+        # Shows a warning to the user.
+        pass
+    def show_info(self, text=None):
+        # Shows an informational message to the user.
+        pass
 
 class ShellUI(UI):
     def display_interface_output(self, output):
         rprint(Panel("[bright_magenta]" + escape(output) + "[/bright_magenta]", border_style="bright_magenta"))
 
-    def safety_confirmation(self, question):
+    def safety_confirmation(self, name):
         print("")
         rprint(Panel("[red1] SAFETY CHECK [/red1]", border_style="red1"))
-        return Confirm.ask(f"[red1] {question} [/red1]")
+        return Confirm.ask(f"[red1] Execute {name} code? [/red1]")
 
     def no_safety_confirmation(self):
         print("")
@@ -71,45 +77,192 @@ class ShellUI(UI):
     def append_to_assistant_output(self, author, chunk, ending):
         print(chunk or "", end="\n" if ending else "")
 
+    def show_warning(self, text=None):
+        if text is None:
+            rprint(Panel("[red1] [!] This assistant will be able to execute commands\n" +
+                        "    on your shell when prompted. You will be asked to\n" +
+                        "    confirm the execution of each of these commands.\n" + 
+                        "    Please read each command and respond carefully.\n" +
+                        "    Use at your own risk.[/red1]", border_style="red1"))
+        else:
+            rprint(Panel("[red1] " + text + "[/red1]", border_style="red1"))
+        
+    def show_info(self, text):
+        rprint(Panel(text))
+
 
 class NotebookUI(UI):
     def display_interface_output(self, output):
         rprint(Panel("[bright_magenta]" + escape(output) + "[/bright_magenta]", border_style="bright_magenta"))
 
-    def safety_confirmation(self, question):
-        print("")
-        rprint(Panel("[red1] SAFETY CHECK [/red1]", border_style="red1"))
-        return Confirm.ask(f"[red1] {question} [/red1]")
+    def safety_confirmation(self, name):
+        from IPython.display import display, HTML
+        display(HTML("""
+        <button style="
+                     padding: 0.7em;
+                     padding-top: 0.5em;
+                    background: #fff;
+                    color: #4A5568;
+                    margin-top: 0.5em;
+                    border: 0px solid #A0AEC0;
+                    box-shadow: 0 0 0 #BEE3F8;
+                    transform: translateY(0);
+                    border-radius: .5em;
+                     font-size: 1.4vmin;font-family: 'Poppins', sans-serif;
+                     "
+                        onclick="
+                    setTimeout(function() {
+                    var cell_index = Jupyter.notebook.get_selected_index() + 1;
+                    var cell = Jupyter.notebook.get_cell(cell_index);
+                    var current_cell_text = cell.get_text();
+                    var new_cell_text = 'saola.user << True';
+                    if (current_cell_text === '') {
+                        cell.set_text(new_cell_text);
+                        cell.code_mirror.focus();
+                        cell.render();
+                    }
+                    cell.code_mirror.focus();
+                     }, 100);
+                     ">
+                <div style="display: inline-block; transform: translateY(0.3em)"><i class="gg-play-button-o"></i></div>&nbsp;&nbsp;Run Code</button>
+        """))
+        return None
 
     def no_safety_confirmation(self):
-        print("")
         return True 
 
     def display_user_header(self):
-        rprint(Panel("[bold green]USER (type saola.convo << \"your message\")[/bold green]"))
-        # Add a JavaScript code that finds the next cell and focuses on it,
-        # and sets the text to 'saola.convo << """\n\n"""' and places the caret between the line breaks
         from IPython.display import display, HTML
         display(HTML("""
+        <link href="https://fonts.googleapis.com/css?family=Poppins:600&display=swap" rel="stylesheet">
+
+        <style type="text/css">
+        #notebook-container {
+            background: linear-gradient(90deg, #e3ffe7 0%, #d9e7ff 100%);
+        }
+        .gg-user {
+            display: block;
+            transform: scale(var(--ggs,1));
+            box-sizing: border-box;
+            width: 12px;
+            height: 18px
+        }
+        .gg-user::after,
+        .gg-user::before {
+            content: "";
+            display: block;
+            box-sizing: border-box;
+            position: absolute;
+            border: 2px solid
+        }
+        .gg-user::before {
+            width: 8px;
+            height: 8px;
+            border-radius: 30px;
+            top: 0;
+            left: 2px
+        }
+        .gg-user::after {
+            width: 12px;
+            height: 9px;
+            border-bottom: 0;
+            border-top-left-radius: 3px;
+            border-top-right-radius: 3px;
+            top: 9px
+        }
+        .gg-comment {
+        box-sizing: border-box;
+        position: relative;
+        display: block;
+        transform: scale(var(--ggs,1));
+        width: 20px;
+        height: 16px;
+        border: 2px solid;
+        border-bottom: 0;
+        box-shadow:
+        -6px 8px 0 -6px,
+        6px 8px 0 -6px
+        }
+
+        .gg-comment::after,
+        .gg-comment::before {
+        content: "";
+        display: block;
+        box-sizing: border-box;
+        position: absolute;
+        width: 8px
+        }
+
+        .gg-comment::before {
+        border: 2px solid;
+        border-top-color: transparent;
+        border-bottom-left-radius: 20px;
+        right: 4px;
+        bottom: -6px;
+        height: 6px
+        }
+
+        .gg-comment::after {
+        height: 2px;
+        background: currentColor;
+        box-shadow: 0 4px 0 0;
+        left: 4px;
+        top: 4px
+        } 
+        .gg-play-button-o {
+        box-sizing: border-box;
+        position: relative;
+        display: block;
+        transform: scale(var(--ggs,1));
+        width: 22px;
+        height: 22px;
+        border: 2px solid;
+        border-radius: 20px
+        }
+
+        .gg-play-button-o::before {
+        content: "";
+        display: block;
+        box-sizing: border-box;
+        position: absolute;
+        width: 0;
+        height: 10px;
+        border-top: 5px solid transparent;
+        border-bottom: 5px solid transparent;
+        border-left: 6px solid;
+        top: 4px;
+        left: 7px
+        } 
+        </style>
+        <div style="padding: 0.7em;
+                    background: #bdd6ff;
+                    color: #4A5568;
+                    margin-top: 0.5em;
+                    border: 0px solid #A0AEC0;
+                    box-shadow: 0 0 0 #BEE3F8;
+                    transform: translateY(0);
+                        border-radius: .5em;
+                     ">
+            <div style="font-size: 2vmin;font-family: 'Poppins', sans-serif;"><div style="display: inline-block"><i class="gg-user"></i></div>&nbsp;&nbsp;USER</div>
+
+        </div>
         <script>
         var cell_index = Jupyter.notebook.get_selected_index();
         var cell = Jupyter.notebook.get_cell(cell_index);
+        var current_cell_text = cell.get_text();
+        var new_cell_text = "# Type your message below\\nsaola.user << \\\"\\\"\\\"\\n\\n\\\"\\\"\\\"";
         // Only if cell text is empty
-        if (cell.get_text() === "") {
-            cell.set_text("saola.convo << \\\"\\\"\\\"\\n\\n\\\"\\\"\\\"");
+        if (current_cell_text === "" || current_cell_text === new_cell_text) {
+            cell.set_text(new_cell_text);
+            cell.code_mirror.focus();
+            cell.code_mirror.setCursor({line: 2, ch: 0})
+            cell.render();
         }
-        cell.render();
-        Jupyter.notebook.select(cell_index);
-        Jupyter.notebook.edit_mode();
+        cell.code_mirror.focus();
+        // Jupyter.notebook.select(cell_index);
+        // Jupyter.notebook.edit_mode();
         </script>
         """))
-        # display(HTML("""
-        # <script>
-        # var cell = Jupyter.notebook.get_selected_index() + 1;
-        # Jupyter.notebook.select(cell);
-        # Jupyter.notebook.edit_mode();
-        # </script>
-        # """))
 
 
     def supports_synchronous_user_input(self):
@@ -119,10 +272,58 @@ class NotebookUI(UI):
         raise NotImplementedError("The Notebook UI does not support synchronous user input.")
 
     def display_assistant_header(self):
-        rprint(Panel("[bold blue]ASSISTANT[/bold blue]"))
+        from IPython.display import display, HTML
+        display(HTML("""
+        <div style="padding: 0.7em;
+                    background: #bff3cf;
+                    color: #4A5568;
+                    border: 0px solid #A0AEC0;
+                    margin-top: 1em;
+                    margin-bottom: 0.3em;
+                    box-shadow: 0 0 0 #BEE3F8;
+                    transform: translateY(0);
+                        border-radius: .5em;
+                     ">
+            <div style="font-size: 2vmin;font-family: 'Poppins', sans-serif;"><div style="display: inline-block"><i class="gg-comment"></i></div>&nbsp;&nbsp;ASSISTANT</div>
+        </div>
+        """))
+        # rprint(Panel("[bold blue]ASSISTANT[/bold blue]"))
 
     def append_to_assistant_output(self, author, chunk, ending):
         print(chunk or "", end="\n" if ending else "")
+
+    def show_warning(self, text=None):
+        from IPython.display import display, HTML
+        text = text or "⚠️ This assistant will be able to execute code on your behalf. You may be asked to confirm the execution of each of these commands. Please read each command and respond carefully. Use at your own risk."
+        display(HTML(f"""
+        <div style="padding: 0.7em;
+                    background: #ee5050;
+                    color: #fff;
+                    font-size: 1.5vmin;
+                    border: 0px solid #A0AEC0;
+                    box-shadow: 0 0 0 #BEE3F8;
+                    transform: translateY(0);
+                        border-radius: .5em;
+                     ">
+            {text}
+        </div>
+        """))
+        
+    def show_info(self, text):
+        from IPython.display import display, HTML
+        display(HTML(f"""
+        <div style="padding: 0.7em;
+                    background: #aaaaaa;
+                    color: #fff;
+                    font-size: 1.5vmin;
+                    border: 0px solid #A0AEC0;
+                    box-shadow: 0 0 0 #BEE3F8;
+                    transform: translateY(0);
+                        border-radius: .5em;
+                     ">
+            {text}
+        </div>
+        """))
 
 
 DefaultUI = NotebookUI if _is_notebook() else ShellUI

@@ -80,7 +80,7 @@ class BaseConvo:
         self.bubbles = self.bubbles[:checkpoint]
 
     def loop(self):
-        saola.convo = self
+        saola.user = UserRef(self)
         self.ui.display_user_header()
         while True:
             if self.ui.supports_synchronous_user_input():
@@ -89,15 +89,29 @@ class BaseConvo:
             else:
                 break
 
+    def ready_for_user_input(self):
+        return True
+
     def append_user_input(self, user_input):
-        self.user << user_input
-        self.ui.display_assistant_header()
+        if user_input:
+            self.user << user_input
+            self.ui.display_assistant_header()
         self.stream_answer_to_end(self.ui.append_to_assistant_output)
-        self.ui.display_user_header()
-        
-    # Support for << operator
+        if self.ready_for_user_input():
+            self.ui.display_user_header()
+
+class UserRef:
+    """
+    A wrapper for a convo so the user can append messages to it using the << operator,
+    and trigger the assistant to respond to the messages.
+    """
+    def __init__(self, convo):
+        self.convo = convo
+
+    # Support for the << operator
     def __lshift__(self, user_input):
-        self.append_user_input(user_input)
+        if not user_input: return
+        self.convo.append_user_input(user_input)
             
 
 class Bubble:

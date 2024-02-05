@@ -4,6 +4,7 @@ import subprocess
 from io import StringIO
 from saola.base_convo import BaseConvo
 from saola.model import R
+import saola
 
 class Convo(BaseConvo):
     def __init__(self, model, *, ui=None, interfaces=None, safety_checks=True):
@@ -29,12 +30,23 @@ class Convo(BaseConvo):
             # Feel free to go step by step when following instructions from the user. It is ok to ask for clarification questions, or to use the interfaces provided to find out more information before performing an action.
             # """
     
+    @property
+    def user(self):
+        self.current_matching_interface = None
+        return super().user
+    
+    def ready_for_user_input(self):
+        return self.current_matching_interface is None
+
     def stream_answer(self, *handlers):
         self.current_streaming_bubble = None
         while True:
-            for (bubble, chunk) in super().stream_answer(*[i(self) for i in self.interfaces], *handlers):
-                self.current_streaming_bubble = bubble
-                yield (bubble, chunk)
+            if not self.current_matching_interface:
+                for (bubble, chunk) in super().stream_answer(*[i(self) for i in self.interfaces], *handlers):
+                    self.current_streaming_bubble = bubble
+                    yield (bubble, chunk)
+            else:
+                self.current_streaming_bubble = self.bubbles[-1]
             interface = self.current_matching_interface
             meta = interface.meta if interface else None
             output = interface._execute() if interface else None
@@ -47,6 +59,13 @@ class Convo(BaseConvo):
                 break
         self.current_streaming_bubble = None
 
+    def append_user_input(self, user_input):
+        if user_input is True and self.current_matching_interface:
+            self.current_matching_interface.approved = True
+            user_input = None
+        super().append_user_input(user_input)
+
+
 class Interface:
     safety_checks = True
     empty_output = "<empty output>"
@@ -57,6 +76,7 @@ class Interface:
         self.pattern_end_pos = -1
         self.current_code = None
         self.meta = {'interface': self.name}
+        self.approved = False
 
     @property
     def pattern_start(self):
@@ -72,11 +92,17 @@ class Interface:
     def _execute(self):
         self.convo.current_matching_interface = None
         if self.current_code is None: return None
-        if ((not self.safety_checks or not self.convo.safety_checks) and self.convo.ui.no_safety_confirmation()) \
-           or self.convo.ui.safety_confirmation(f"[red1] Execute {self.name} code? [/red1]"):
+        if (self.approved or not self.safety_checks or not self.convo.safety_checks) and self.convo.ui.no_safety_confirmation():
             output = self.execute(self.current_code) or self.empty_output
         else:
-            output = f"The user prevented this {self.name} code from running. This was a manual action and not an error of the code itself. The user may have an explanation for their decision."
+            confirmation = self.convo.ui.safety_confirmation(self.name)
+            if confirmation is True:
+                output = self.execute(self.current_code) or self.empty_output
+            elif confirmation is False:
+                output = f"The user prevented this {self.name} code from running. This was a manual action and not an error of the code itself. The user may have an explanation for their decision."
+            else:
+                self.convo.current_matching_interface = self
+                output = None
         return output
     
     def _find_substring(self, substring, text, chunk, needs_newline):
