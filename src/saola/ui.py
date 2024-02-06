@@ -51,7 +51,8 @@ class UI(abc.ABC):
 
 class ShellUI(UI):
     def display_interface_output(self, output):
-        rprint(Panel("[bright_magenta]" + escape(output) + "[/bright_magenta]", border_style="bright_magenta"))
+        pass
+        # rprint(Panel("[bright_magenta]" + escape(output) + "[/bright_magenta]", border_style="bright_magenta"))
 
     def safety_confirmation(self, name):
         print("")
@@ -93,7 +94,9 @@ class ShellUI(UI):
 
 class NotebookUI(UI):
     def display_interface_output(self, output):
-        rprint(Panel("[bright_magenta]" + escape(output) + "[/bright_magenta]", border_style="bright_magenta"))
+        pass
+        # from IPython.display import display, Markdown
+        # display(Markdown(f'```\n{output}\n```'))
 
     def safety_confirmation(self, name):
         from IPython.display import display, HTML
@@ -115,7 +118,7 @@ class NotebookUI(UI):
                     var cell_index = Jupyter.notebook.get_selected_index() + 1;
                     var cell = Jupyter.notebook.get_cell(cell_index);
                     var current_cell_text = cell.get_text();
-                    var new_cell_text = 'saola.user << True';
+                    var new_cell_text = '# This lets me run the code above\\nsaola.user << True';
                     if (current_cell_text === '') {
                         cell.set_text(new_cell_text);
                         cell.code_mirror.focus();
@@ -124,7 +127,7 @@ class NotebookUI(UI):
                     cell.code_mirror.focus();
                      }, 100);
                      ">
-                <div style="display: inline-block; transform: translateY(0.3em)"><i class="gg-play-button-o"></i></div>&nbsp;&nbsp;Run Code</button>
+                <div style="display: inline-block;  vertical-align: middle;"><i class="gg-play-button-o"></i></div><div style="display: inline-block;  vertical-align: middle;">&nbsp;&nbsp;Run Code</div></button>
         """))
         return None
 
@@ -134,9 +137,15 @@ class NotebookUI(UI):
     def display_user_header(self):
         from IPython.display import display, HTML
         display(HTML("""
+        <!--<link rel="stylesheet" href="https://unpkg.com/beautiful-markdown" />-->
         <link href="https://fonts.googleapis.com/css?family=Poppins:600&display=swap" rel="stylesheet">
 
         <style type="text/css">
+        .markdown-rendered > pre {
+            background-color: rgba(0, 0, 0, 0.05) !important;
+            padding: 1em !important; 
+        }
+
         #notebook-container {
             background: linear-gradient(90deg, #e3ffe7 0%, #d9e7ff 100%);
         }
@@ -262,6 +271,90 @@ class NotebookUI(UI):
         // Jupyter.notebook.select(cell_index);
         // Jupyter.notebook.edit_mode();
         </script>
+                     
+
+        <script>
+            if (document.addedMarkdownObserver === undefined) {
+                
+                markdown = requirejs("base/js/markdown")
+                
+                function startMarkdownRendering() {
+                    // Function to create/update the markdown display element
+                    function renderMarkdown(preElement) {
+                     
+                        preElement.style.display = 'none';
+                     
+                        let markdownContent = preElement.innerText;
+                        let markdownDisplay = preElement.previousElementSibling;
+                        
+                        // Check if the markdown display element already exists
+                        if (!markdownDisplay || markdownDisplay.className !== 'markdown-rendered') {
+                            // Create a new markdown display element if it doesn't exist
+                            markdownDisplay = document.createElement('div');
+                            markdownDisplay.className = 'markdown-rendered';
+                            preElement.parentNode.insertBefore(markdownDisplay, preElement);
+                        }
+                        
+                        markdownContent = markdownContent.replace(/\\n?\\[(\\w+)\\]\\n?/g, (match, p1) => "\\n```" + p1.toLowerCase().replaceAll("_", "") + "\\n");
+                        markdownContent = markdownContent.replace(/\\n?\\[\\/(\\w+)\\]\\n?/g, "\\n```\\n");
+
+                        // Number of lines that start with ```:
+                        let numCodeBlocks = (markdownContent.match(/```/g) || []).length;
+                        // If the number of code blocks is odd, add a closing ```
+                        if (numCodeBlocks % 2 === 1) { markdownContent += "\\n```"; }
+
+                        // Update the markdown display element with rendered content
+                        markdown.render(markdownContent, {with_math: true, clean_tables: true, sanitize: true}, function (err, html) { 
+                            // console.log(html);
+                            if (html !== undefined && html !== null) {
+                                // Remove all children first:
+                                while (markdownDisplay.firstChild) {
+                                    markdownDisplay.removeChild(markdownDisplay.firstChild);
+                                }
+                                html.appendTo($(markdownDisplay));
+                                // markdownDisplay.appendChild(html);
+                            }
+                         })
+                    }
+
+                    // Set up a MutationObserver to watch for changes in the DOM
+                    const observer = new MutationObserver((mutationsList) => {
+                    for (let mutation of mutationsList) {
+                        // console.log("MUTATION!")
+                        // console.log(mutation)
+                        if (mutation.type === 'childList' && mutation.target.tagName === 'PRE'
+                            && mutation.target.parentNode.classList.contains('output_subarea')) {
+                            renderMarkdown(mutation.target);
+                        } else if (mutation.type == 'childList' && mutation.target.tagName === 'DIV'
+                                   && (mutation.target.classList.contains('output_subarea')
+                                       || mutation.target.classList.contains('output_area')
+                                       || mutation.target.classList.contains('output'))) {
+                            mutation.target.querySelectorAll('pre').forEach(preElement => {
+                                renderMarkdown(preElement);
+                            });
+                        }
+                    }
+                    });
+
+                    // Observe the document body for changes in child list and character data
+                    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+
+                    // Initial rendering for existing `pre` elements
+                    document.querySelectorAll('div.output_subarea > pre').forEach(preElement => {
+                        renderMarkdown(preElement);
+                    });
+                }
+                
+                startMarkdownRendering();    
+            }
+
+            document.addedMarkdownObserver = true;
+        </script>
+
+
+
+
+
         """))
 
 

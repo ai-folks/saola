@@ -4,7 +4,7 @@ import subprocess
 from io import StringIO
 from saola.base_convo import BaseConvo
 from saola.model import R
-import saola
+import pexpect
 
 class Convo(BaseConvo):
     def __init__(self, model, *, ui=None, interfaces=None, safety_checks=True):
@@ -154,17 +154,52 @@ class ShellInterface(Interface):
     An important thing to know is that each shell command is independent, so instead of running for example "cd some_path" followed by "ls", you will probably need to do "ls some_path" or "cd some_path && ls" instead.
     In case this is useful, here is some information about the user's system: {os.uname()}. Also the user's username is {os.getlogin()}.
     """
-    max_output_length = None
 
     def execute(self, code):
-        process = subprocess.Popen(code.strip(), shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate()
-        stdout = stdout.decode("utf-8")
-        stderr = stderr.decode("utf-8")
-        if self.max_output_length and len(stdout) > self.max_output_length: stdout = stdout[:self.max_output_length].rstrip("\n") + "\n-- STDOUT TRIMMED FOR BEING TOO LONG --"
-        if self.max_output_length and len(stderr) > self.max_output_length: stderr = stderr[:self.max_output_length].rstrip("\n") + "\n-- STDERR TRIMMED FOR BEING TOO LONG --"
-        output = (stdout + stderr).rstrip('\n')
-        return output
+        output_capture = StringIO()
+
+        # Start the command with pexpect
+        child = pexpect.spawn(code.strip(), encoding='utf-8', timeout=None)
+
+        # Use a try-except block to catch pexpect exceptions, if any
+        try:
+            while True:
+                # This tries to read a line, streaming to sys.stdout and capturing in StringIO
+                line = child.readline()
+                if not line:  # If no more lines are read, break out of the loop
+                    break
+                print(line)  # Stream to stdout
+                output_capture.write(line)  # Capture the output
+        except pexpect.EOF:
+            pass  # Handle the end of file (EOF) condition if necessary
+        except pexpect.TIMEOUT:
+            pass  # Handle a timeout if necessary
+
+        # After the process ends, capture any remaining output
+        if child.before:
+            print(child.before)
+            output_capture.write(child.before)
+
+        # Assuming the command errors are directed to stdout
+        # If stderr needs to be separately captured, that would require a different approach
+
+        # Return the captured output and errors
+        return output_capture.getvalue()
+
+
+
+        # old_stdout = sys.stdout
+        # old_stderr = sys.stderr
+        # sys.stdout = new_stdout = StringAndPrintIO(old_stdout)
+        # sys.stderr = new_stderr = StringAndPrintIO(old_stderr)
+        # try:
+        #     subprocess.run(code.strip(), check=True, stdout=new_stdout, stderr=new_stderr)
+        #     return new_stdout.getvalue().rstrip() + new_stderr.getvalue().rstrip()
+        # except Exception as e:
+        #     return f"ERROR: {e}"
+        # finally:
+        #     sys.stdout = old_stdout
+        #     sys.stderr = old_stderr
 
 
 class StringAndPrintIO:
@@ -185,7 +220,9 @@ class StringAndPrintIO:
 
     def getvalue(self):
         return self.string_io.getvalue()
-
+    
+    def fileno(self):
+        return self.stdout.fileno()
 
 class PythonInterface(Interface):
     name = "PYTHON"
@@ -195,14 +232,20 @@ class PythonInterface(Interface):
     empty_output = "Empty output. This normally means the code ran successfully."
 
     def execute(self, code):
+        old_stdout = sys.stdout
+        old_stderr = sys.stderr
+        sys.stdout = new_stdout = StringAndPrintIO(old_stdout)
+        sys.stderr = new_stderr = StringAndPrintIO(old_stderr)
         try:
-            old_stdout = sys.stdout
-            sys.stdout = new_stdout = StringAndPrintIO(old_stdout)
             exec(code.strip(), globals())
-            sys.stdout = old_stdout
-            return new_stdout.getvalue().rstrip()
+            new_stdout.flush()
+            new_stderr.flush()
+            return new_stdout.getvalue().rstrip() + new_stderr.getvalue().rstrip()
         except Exception as e:
             return f"ERROR: {e}"
+        finally:
+            sys.stdout = old_stdout
+            sys.stderr = old_stderr
     
 class FileShowInterface(Interface):
     name = "FILE_SHOW"
