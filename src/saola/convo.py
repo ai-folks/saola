@@ -4,6 +4,7 @@ import subprocess
 from io import StringIO
 from saola.base_convo import BaseConvo
 from saola.model import R
+from saola.utils import _is_notebook
 import pexpect
 
 class Convo(BaseConvo):
@@ -49,7 +50,7 @@ class Convo(BaseConvo):
                 self.current_streaming_bubble = self.bubbles[-1]
             interface = self.current_matching_interface
             meta = interface.meta if interface else None
-            output = interface._execute() if interface else None
+            output = interface._execute(self.ui.will_begin_interface_output) if interface else None
             if output:
                 self.ui.display_interface_output(output)
                 self.bubble_maker(self.current_streaming_bubble.author, meta=meta or self.current_streaming_bubble.meta) << \
@@ -89,14 +90,16 @@ class Interface:
     def execute(self, code):
         raise NotImplementedError()
 
-    def _execute(self):
+    def _execute(self, will_begin):
         self.convo.current_matching_interface = None
         if self.current_code is None: return None
         if (self.approved or not self.safety_checks or not self.convo.safety_checks) and self.convo.ui.no_safety_confirmation():
+            will_begin(self)
             output = self.execute(self.current_code) or self.empty_output
         else:
             confirmation = self.convo.ui.safety_confirmation(self.name)
             if confirmation is True:
+                will_begin(self)
                 output = self.execute(self.current_code) or self.empty_output
             elif confirmation is False:
                 output = f"The user prevented this {self.name} code from running. This was a manual action and not an error of the code itself. The user may have an explanation for their decision."
@@ -159,7 +162,7 @@ class ShellInterface(Interface):
         output_capture = StringIO()
 
         # Start the command with pexpect
-        child = pexpect.spawn(code.strip(), encoding='utf-8', timeout=None)
+        child = pexpect.spawn('/bin/bash', ['-c', code.strip()], encoding='utf-8', timeout=None)
 
         # Use a try-except block to catch pexpect exceptions, if any
         try:
@@ -225,19 +228,26 @@ class StringAndPrintIO:
         return self.stdout.fileno()
 
 class PythonInterface(Interface):
+    _globals = None
+    _locals = None
+
     name = "PYTHON"
     explanation = """
-    This interface allows you to run Python code. The input of your command is the Python code to be executed, in an isolated scope. The output of your command is the result of the Python code. You may use this interface to perform calculations, manipulate data, or run any Python code that you need. The stdout (e.g. outputs of print calls) and stderr of your code will show up in the chat and you may proceed to answer questions and requests based on those outputs. An empty output usually means the code ran successfully. If you need the result of a calculation or of an algorithm to answer a user query, you will need to print it. Things like charts and plots are supported by this interface, and they are visible to the user even if they are not visible to you. You can do multiple things and display multiple charts in one same Python code, if necessary.
-    """
+    This interface allows you to run Python code. The input of your command is the Python code to be executed. All Python code in this conversation is executed at the same scope, so all global variables are shared. The output of your command is the result of the Python code. You may use this interface to perform calculations, manipulate data, or run any Python code that you need. The stdout (e.g. outputs of print calls) and stderr of your code will show up in the chat and you may proceed to answer questions and requests based on those outputs. An empty output usually means the code ran successfully. If you need the result of a calculation or of an algorithm to answer a user query, you will need to print it, or display, or show it, explicitly, for example print(x), instead of just typing x at the end of the code. Things like charts and plots are supported by this interface, and they are visible to the user even if they are not visible to you. You can do multiple things and display multiple charts in one same Python code, if necessary.
+    """ + """
+    This conversation is happening within a Jupyter Notebook. If you ever need to display an object to the user, please make sure to explicitly call the display function of the IPython.display module, for example display(x), or the built-in Python print(x), instead of just typing x at the end of the code.
+    """ if _is_notebook() else ""
     empty_output = "Empty output. This normally means the code ran successfully."
 
     def execute(self, code):
+        if PythonInterface._globals is None: PythonInterface._globals = {}
+        if PythonInterface._locals is None: PythonInterface._locals = {}
         old_stdout = sys.stdout
         old_stderr = sys.stderr
         sys.stdout = new_stdout = StringAndPrintIO(old_stdout)
         sys.stderr = new_stderr = StringAndPrintIO(old_stderr)
         try:
-            exec(code.strip(), globals())
+            exec(code.strip(), PythonInterface._globals, PythonInterface._locals)
             new_stdout.flush()
             new_stderr.flush()
             return new_stdout.getvalue().rstrip() + new_stderr.getvalue().rstrip()
@@ -296,7 +306,10 @@ class SearchInterface(Interface):
         try:
             from langchain_community.utilities import SerpAPIWrapper
             search = SerpAPIWrapper()
-            return search.run(code.strip())
+            result = search.run(code.strip())
+            print(result + "\n")
+            sys.stdout.flush()
+            return result
         except Exception as e:
                 return f"ERROR: {e}"
 

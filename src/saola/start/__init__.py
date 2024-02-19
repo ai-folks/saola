@@ -26,7 +26,7 @@ import os
 # This file is likely to experience lots of breaking changes in the future.
 # Do not have your project depend on it.
 
-def start(safety_checks=True, show_warning=True, show_model_info=True):
+def start(safety_checks=True, show_warning=True, show_model_info=False):
     ui = DefaultUI()
     if show_warning: ui.show_warning()
     open_ai_api_key = os.getenv("OPENAI_API_KEY") or input("OpenAI API Key: ")

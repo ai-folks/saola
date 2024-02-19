@@ -11,7 +11,7 @@ https://github.com/ai-folks/saola/assets/8546027/e6ec2204-824c-4e49-828f-70361c6
 To install Saola simply do:
 
 ```bash
-pip install git+https://github.com/ai-folks/saola.git@2.1.0
+pip install git+https://github.com/ai-folks/saola.git@3.0.0
 ```
 
 And to try out the default Saola assistant (with `SHELL`, `FILE_WRITE` and `PYTHON` interfaces), do:
@@ -28,6 +28,14 @@ saola.start()  # Alternatively saola.start(safety_checks=False) (use this at you
 ```
 
 **Disclaimer**: This assistant is capable of executing shell commands and writing to files (you will be asked to confirm each action if you do not disable safety checks). It is intended for responsible use and should be employed with an understanding of the potential actions taken by the assistant.
+
+## Troubleshooting
+
+Some effort has been placed on making sure the plain `saola.start()` command works out of the box, but there is a chance it will not work on your machine. Here are some notes on the current implementation and some troubleshooting tips:
+
+- The shell interface may not yet work on Windows.
+- The Jupyter Notebook UI works better when using a recent version (> 4.1.0) of JupyterLab.
+- Open an issue if you have any trouble getting Saola to work. We will make an effort to respond to every issue.
 
 ## Development - Assistant Without Interfaces
 
