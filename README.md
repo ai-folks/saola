@@ -31,7 +31,7 @@ saola.start()  # Alternatively saola.start(safety_checks=False) (use this at you
 
 ## Troubleshooting
 
-Some effort has been placed on making sure the plain `saola.start()` command works out of the box, but there is a chance it will not work on your machine. Here are some notes on the current implementation and some troubleshooting tips:
+Some effort has been made to ensure the plain `saola.start()` command works out of the box, but there is a chance it will not work on your machine. Here are some notes on the current implementation and some troubleshooting tips:
 
 - The shell interface may not yet work on Windows.
 - The Jupyter Notebook UI works better when using a recent version (> 4.1.0) of JupyterLab.
