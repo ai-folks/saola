@@ -167,6 +167,10 @@ class NotebookUI(UI):
             font-family: 'Arial', sans-serif;
             font-size: 1.1em;
         }
+        
+        .saola-markdown-rendered > p {
+            margin-bottom: 1em;
+        }
                      
         .saola-markdown-rendered-no-toggles > .saola-code-toggle {
             display: none;
@@ -374,62 +378,68 @@ class NotebookUI(UI):
 
                 function processPlainTextOutput(element) {
                     element.style.display = 'none';
-                    var prev = element.previousElementSibling;
-                    if (!prev || !prev.classList.contains('saola-markdown-rendered')) {
-                        prev = document.createElement('div');
-                        markdownContent = element.textContent;
-                        markdownContent = markdownContent.replace(/\\n?\\[(__\\w+__)\\]\\n?/g, (match, p1) => "\\n```" + p1.toLowerCase() + "\\n");
-                        markdownContent = markdownContent.replace(/\\n?\\[\\/(__\\w+__)\\]\\n?/g, "\\n```\\n");
-                        markdownContent = markdownContent.replace(/^\\n/g, "");
-                        markdownContent = markdownContent.replace(/\\n$/g, "");
-                        SAOLA_OUTPUT_START = '""" + self.SAOLA_OUTPUT_START + """';
-                        SAOLA_OUTPUT_END = '""" + self.SAOLA_OUTPUT_END + """';
-                        // Finds all lines that match exactly SAOLA_OUTPUT_START or SAOLA_OUTPUT_END
-                        // - If the first ocurrence is SAOLA_OUTPUT_END, it removes it
-                        // - If the last ocurrence is SAOLA_OUTPUT_START, it removes it
-                        var lines = markdownContent.split('\\n');
-                        var startLineIndexes = lines.map((line, index) => line === SAOLA_OUTPUT_START ? index : -1).filter(index => index !== -1);
-                        var endLineIndexes = lines.map((line, index) => line === SAOLA_OUTPUT_END ? index : -1).filter(index => index !== -1);
-                        if (endLineIndexes.length > 0 && (startLineIndexes.length === 0 || endLineIndexes[0] < startLineIndexes[0])) {
-                            if (endLineIndexes[0] == 1) {
-                                lines.splice(endLineIndexes[0] - 1, 2);  // Removes the line before and the line of SAOLA_OUTPUT_END
-                            } else {
-                                lines.splice(0, 0, SAOLA_OUTPUT_START);  // Adds the line of SAOLA_OUTPUT_START
-                            }
+                    var rendered = element.nextElementSibling;
+                    var alreadyAdded = rendered && rendered.classList.contains('saola-markdown-rendered');
+                    rendered = alreadyAdded ? rendered : document.createElement('div');
+                    markdownContent = element.textContent;
+                    markdownContent = markdownContent.replace(/\\n?\\[(__\\w+__)\\]\\n?/g, (match, p1) => "\\n```" + p1.toLowerCase() + "\\n");
+                    markdownContent = markdownContent.replace(/\\n?\\[\\/(__\\w+__)\\]\\n?/g, "\\n```\\n");
+                    markdownContent = markdownContent.replace(/^\\n/g, "");
+                    markdownContent = markdownContent.replace(/\\n$/g, "");
+                    SAOLA_OUTPUT_START = '""" + self.SAOLA_OUTPUT_START + """';
+                    SAOLA_OUTPUT_END = '""" + self.SAOLA_OUTPUT_END + """';
+                    // Finds all lines that match exactly SAOLA_OUTPUT_START or SAOLA_OUTPUT_END
+                    // - If the first ocurrence is SAOLA_OUTPUT_END, it removes it
+                    // - If the last ocurrence is SAOLA_OUTPUT_START, it removes it
+                    var lines = markdownContent.split('\\n');
+                    var startLineIndexes = lines.map((line, index) => line === SAOLA_OUTPUT_START ? index : -1).filter(index => index !== -1);
+                    var endLineIndexes = lines.map((line, index) => line === SAOLA_OUTPUT_END ? index : -1).filter(index => index !== -1);
+                    if (endLineIndexes.length > 0 && (startLineIndexes.length === 0 || endLineIndexes[0] < startLineIndexes[0])) {
+                        if (endLineIndexes[0] == 1) {
+                            lines.splice(endLineIndexes[0] - 1, 2);  // Removes the line before and the line of SAOLA_OUTPUT_END
+                        } else {
+                            lines.splice(0, 0, SAOLA_OUTPUT_START);  // Adds the line of SAOLA_OUTPUT_START
                         }
-                        // We need to compute the indexes again, because the array has changed
-                        startLineIndexes = lines.map((line, index) => line === SAOLA_OUTPUT_START ? index : -1).filter(index => index !== -1);
-                        endLineIndexes = lines.map((line, index) => line === SAOLA_OUTPUT_END ? index : -1).filter(index => index !== -1);
-                        if (startLineIndexes.length > 0 && (endLineIndexes.length === 0 || startLineIndexes[startLineIndexes.length - 1] > endLineIndexes[endLineIndexes.length - 1])) {
-                            if (startLineIndexes[startLineIndexes.length - 1] == lines.length - 1) {
-                                lines.splice(startLineIndexes[startLineIndexes.length - 1], 1);
-                            } else {
-                                lines.splice(lines.length, 0, '```\\n' + SAOLA_OUTPUT_END);
-                            }
+                    }
+                    // We need to compute the indexes again, because the array has changed
+                    startLineIndexes = lines.map((line, index) => line === SAOLA_OUTPUT_START ? index : -1).filter(index => index !== -1);
+                    endLineIndexes = lines.map((line, index) => line === SAOLA_OUTPUT_END ? index : -1).filter(index => index !== -1);
+                    if (startLineIndexes.length > 0 && (endLineIndexes.length === 0 || startLineIndexes[startLineIndexes.length - 1] > endLineIndexes[endLineIndexes.length - 1])) {
+                        if (startLineIndexes[startLineIndexes.length - 1] == lines.length - 1) {
+                            lines.splice(startLineIndexes[startLineIndexes.length - 1], 1);
+                        } else {
+                            lines.splice(lines.length, 0, '```\\n' + SAOLA_OUTPUT_END);
                         }
-                        markdownContent = lines.join('\\n');
-                        prev.innerHTML = marked.parse(markdownContent);
-                        function addToggle(codeBlock) {
-                            elementId = 'saola-code-toggle-' + Math.random().toString(36).substring(7);
-                            var toggle = document.createElement('input');
-                            toggle.id = elementId;
-                            toggle.classList.add('saola-code-toggle');
-                            toggle.type = 'checkbox';
-                            toggle.checked = false;
-                            var toggleLabel = document.createElement('label');
-                            toggleLabel.innerText = 'Expand Code';
-                            toggleLabel.htmlFor = elementId;
-                            codeBlock.parentNode.parentNode.insertBefore(toggle, codeBlock.parentNode);
-                            codeBlock.parentNode.parentNode.insertBefore(toggleLabel, codeBlock.parentNode);
+                    }
+                    markdownContent = lines.join('\\n');
+                    rendered.innerHTML = marked.parse(markdownContent);
+                    function addToggle(codeBlock) {
+                        elementId = 'saola-code-toggle-' + Math.random().toString(36).substring(7);
+                        var toggle = document.createElement('input');
+                        toggle.id = elementId;
+                        toggle.classList.add('saola-code-toggle');
+                        toggle.type = 'checkbox';
+                        toggle.checked = false;
+                        var toggleLabel = document.createElement('label');
+                        toggleLabel.innerText = 'Expand Code';
+                        toggleLabel.htmlFor = elementId;
+                        codeBlock.parentNode.parentNode.insertBefore(toggle, codeBlock.parentNode);
+                        codeBlock.parentNode.parentNode.insertBefore(toggleLabel, codeBlock.parentNode);
+                    }
+                    rendered.querySelectorAll('code.language-__python__, code.language-__shell__').forEach(addToggle);
+                    if (!alreadyAdded) {
+                        rendered.classList.add('saola-markdown-rendered');
+                        rendered.classList.add('saola-markdown-rendered-no-toggles');
+                        next = element.nextElementSibling;
+                        if (next) {
+                            element.parentNode.insertBefore(rendered, next);
+                        } else {
+                            element.parentNode.appendChild(rendered);
                         }
-                        prev.querySelectorAll('code.language-__python__, code.language-__shell__').forEach(addToggle);
-                        prev.classList.add('saola-markdown-rendered');
-                        prev.classList.add('saola-markdown-rendered-no-toggles');
-                        element.parentNode.insertBefore(prev, element);
                     }
                 }
 
-                function getAddedDescendants(mutation, pathClasses, innerTagName, targetParentClass=null) {
+                /*function getAddedDescendants(mutation, pathClasses, innerTagName, targetParentClass=null) {
                     if (mutation.type !== 'childList') return [];
                     if (pathClasses.length === 0) return [];
                     if (targetParentClass && !mutation.target.classList.contains(targetParentClass)) return [];
@@ -443,18 +453,48 @@ class NotebookUI(UI):
                         nodes = nodes.flatMap(node => Array.from(node.children).filter(child => child.classList.contains(pathClasses[pathIndex])));
                     }
                     return nodes.flatMap(node => Array.from(node.children).filter(child => child.tagName === innerTagName));
+                }*/
+
+                function getMutationSubjects(mutation, mutationSelectors, targetParentSelector=null) {
+                    if (mutation.type !== 'childList') return [];
+                    if (mutationSelectors.length === 0) return [];
+                    if (targetParentSelector && (!mutation.target.parentNode || !mutation.target.parentNode.matches(targetParentSelector))) return [];
+                    if (!mutation.target.matches(mutationSelectors[0])) return [];
+                    if (mutationSelectors.length === 1) return [mutation.target];
+                    var i = 1;
+                    nodes = Array.from(mutation.addedNodes).filter(node => node.matches(mutationSelectors[1]));
+                    while (i < mutationSelectors.length - 1) {
+                        i++;
+                        nodes = nodes.flatMap(node => Array.from(node.children).filter(child => child.matches(mutationSelectors[i])));
+                    }
+                    return nodes
                 }
 
                 // Define the callback function to execute when mutations are observed
                 const callback = function(mutationsList, observer) {
                     for (const mutation of mutationsList) {
+                        if (mutation.target.matches('pre')) {
+                            console.log(mutation);
+                        }
+                        /*
                         // Jupyter Notebook & JupyterLab
                         pres0 = getAddedDescendants(mutation, ['jp-OutputArea-output'], 'PRE');
                         pres1 = getAddedDescendants(mutation, ['jp-OutputArea', 'jp-OutputArea-child', 'jp-OutputArea-output'], 'PRE');
                         // NbClassic
                         pres2 = getAddedDescendants(mutation, ['output', 'output_area', 'output_subarea'], 'PRE');
                         pres3 = getAddedDescendants(mutation, [], 'PRE', 'output_subarea');
+                        */
+                        // Jupyter Notebook & JupyterLab
+                        pres0 = getMutationSubjects(mutation, ['.jp-OutputArea-output', 'pre']);
+                        pres1 = getMutationSubjects(mutation, ['.jp-OutputArea', '.jp-OutputArea-child', '.jp-OutputArea-output', 'pre']);
+                        // NbClassic
+                        pres2 = getMutationSubjects(mutation, ['.output', '.output_area', '.output_subarea', 'pre']);
+                        pres3 = getMutationSubjects(mutation, ['pre'], '.output_subarea');
                         pres = pres0.concat(pres1).concat(pres2).concat(pres3);
+                        if (mutation.target.matches('pre')) {
+                            console.log(pres);
+                            pres.forEach(p => console.log(p.textContent));
+                        }
                         pres.forEach(processPlainTextOutput);
                     }
                 };
@@ -594,16 +634,11 @@ class NotebookUI(UI):
 
     def show_warning(self, text=None):
         from IPython.display import display, HTML
-        text = text or "⚠️ This assistant will be able to execute code on your behalf. You may be asked to confirm the execution of each of these commands. Please read each command and respond carefully. Use at your own risk."
+        text = text or "<b>Warning:</b> This assistant will be able to execute code on your behalf. You may be asked to confirm the execution of each of these commands. Please read each command and respond carefully. Use at your own risk."
         display(HTML(f"""
-        <div style="padding: 0.7em;
-                    background: #ee5050;
-                    color: #fff;
+        <div style="color: #f00;
                     font-size: 1.5vmin;
-                    border: 0px solid #A0AEC0;
-                    box-shadow: 0 0 0 #BEE3F8;
-                    transform: translateY(0);
-                        border-radius: .5em;
+                    margin-top: 0.5em;
                      ">
             {text}
         </div>
