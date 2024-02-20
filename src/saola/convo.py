@@ -14,6 +14,7 @@ class Convo(BaseConvo):
         self.current_matching_interface = None
         self.interfaces = interfaces or []
         self.safety_checks = safety_checks
+        self.next_interface_title = None
         if len(self.interfaces) > 0:
             self.system << """
             You are a useful AI assistant that has just been equiped with the novel ability to to leverage a collection of "interfaces" to access real-time data and external systems, directly in-chat, in order to answer the user's questions or fulfill user requests. You try to answer all the user's questions and perform the tasks requested by the user, and you promptly leverage the available interfaces whenever needed. These interfaces allow you to perform tasks that a normal LLM-based assistant would not be able to perform.
@@ -52,7 +53,7 @@ class Convo(BaseConvo):
             meta = interface.meta if interface else None
             output = interface._execute(self.ui.will_begin_interface_output) if interface else None
             if output:
-                self.ui.display_interface_output(output)
+                self.ui.display_interface_output(interface, output)
                 self.bubble_maker(self.current_streaming_bubble.author, meta=meta or self.current_streaming_bubble.meta) << \
                     "-- OUTPUT --\n" + output + "\n-- END OUTPUT --"
                 interface.cleanup()
@@ -69,6 +70,7 @@ class Convo(BaseConvo):
 
 class Interface:
     safety_checks = True
+    interrupt_stream_for_execution = True
     empty_output = "<empty output>"
 
     def __init__(self, convo):
@@ -97,7 +99,8 @@ class Interface:
             will_begin(self)
             output = self.execute(self.current_code) or self.empty_output
         else:
-            confirmation = self.convo.ui.safety_confirmation(self.name)
+            confirmation = self.convo.ui.safety_confirmation(self.name, self.convo.next_interface_title)
+            self.convo.next_interface_title = None
             if confirmation is True:
                 will_begin(self)
                 output = self.execute(self.current_code) or self.empty_output
@@ -145,10 +148,34 @@ class Interface:
         self.current_code = full_text[self.pattern_start_pos + len(self.pattern_start):self.pattern_end_pos]
         new_text = full_text[:self.pattern_end_pos + len(self.pattern_end)]
         new_chunk = new_text[len(text):].rstrip(os.linesep)
-        return R(chunk=new_chunk, should_yield=True, should_continue=False)
+        if self.interrupt_stream_for_execution:
+            return R(chunk=new_chunk, should_yield=True, should_continue=False)
+        else:
+            _ = self._execute(lambda _: None)
+            return None
     
     def cleanup(self):
         pass
+
+class TitleInterface(Interface):
+    name = "TITLE"
+    safety_checks = False
+    interrupt_stream_for_execution = False
+    explanation = """
+    Before using any other interface, you must set a short imperative form title-cased title for the action you are about to perform. This title may or may not be displayed on the user's machine as a button. You do this using this interface. For example:
+
+    [__TITLE__] Perform Action X [/__TITLE__]
+
+    [__PYTHON__]
+    ... Some Python code that performs action x ...
+    [/__PYTHON__]
+
+    Always remember to perform the action at hand using the corresponding interface, after setting the title.
+    """
+
+    def execute(self, code):
+        title = code.strip()
+        self.convo.next_interface_title = title
 
 class ShellInterface(Interface):
     name = "SHELL"

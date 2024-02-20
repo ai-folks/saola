@@ -6,6 +6,7 @@ from rich.markup import escape
 from rich.prompt import Confirm
 from uuid import uuid4
 from saola.utils import _is_notebook
+import saola
 import time
 
 
@@ -16,10 +17,10 @@ class UI(abc.ABC):
     def will_begin_interface_output(self, interface):
         # Called before an interface's output is displayed.
         pass
-    def display_interface_output(self, output):
+    def display_interface_output(self, interface, output):
         # Displays an interface's output to the user.
         pass
-    def safety_confirmation(self, name):
+    def safety_confirmation(self, name, confirmation_title):
         # Asks the user a yes/no question and returns the answer.
         pass
     def no_safety_confirmation(self):
@@ -48,11 +49,11 @@ class UI(abc.ABC):
         pass
 
 class ShellUI(UI):
-    def display_interface_output(self, output):
+    def display_interface_output(self, interface, output):
         pass
         # rprint(Panel("[bright_magenta]" + escape(output) + "[/bright_magenta]", border_style="bright_magenta"))
 
-    def safety_confirmation(self, name):
+    def safety_confirmation(self, name, confirmation_title):
         print("")
         rprint(Panel("[red1] SAFETY CHECK [/red1]", border_style="red1"))
         return Confirm.ask(f"[red1] Execute {name} code? [/red1]")
@@ -96,17 +97,22 @@ class NotebookUI(UI):
     def will_begin_interface_output(self, interface):
         print(os.linesep + self.SAOLA_OUTPUT_START)
 
-    def display_interface_output(self, output):
+    def display_interface_output(self, interface, output):
         # Does not actually print the output, as this is assumed to be printed during execution
         print(("" if output.endswith(os.linesep) else os.linesep) + "```\n" + self.SAOLA_OUTPUT_END)
 
-    def safety_confirmation(self, name):
+    def safety_confirmation(self, name, confirmation_title):
         from IPython.display import display, HTML
+        from ipywidgets import Button, Layout, widgets
+
         display(HTML("""
         <script>
-            saola.stopAssistantAnimations();
+            if (window.saola) {
+                window.saola.stopAssistantAnimations();
+                window.saola.processAllPlainTextOutput();
+            }
         </script>
-        <button style="
+        <!--<button style="
                      padding: 0.7em;
                      padding-top: 0.5em;
                     background: #fff;
@@ -126,8 +132,34 @@ class NotebookUI(UI):
                             saola.setCellText(nextCell, 'saola.user << True # Run the code above and handoff back to the Saola assistant', '');
                         }, 1);
                      ">
-                <div style="display: inline-block;  vertical-align: middle;"><i class="gg-play-button-o"></i></div><div style="display: inline-block;  vertical-align: middle;">&nbsp;&nbsp;Run Code</div></button>
+                <div style="display: inline-block;  vertical-align: middle;"><i class="gg-play-button-o"></i></div><div style="display: inline-block;  vertical-align: middle;">&nbsp;&nbsp;Run Code</div></button>-->
         """))
+        button = Button(description=confirmation_title or "Run Code")
+        button.layout = Layout(width="auto")
+        button.style.padding = "0.7em"
+        button.style.padding_top = "0.5em"
+        button.style.background = "#fff"
+        button.style.color = "#4A5568"
+        button.style.margin_top = "0.5em"
+        button.style.border = "0px solid #A0AEC0"
+        button.style.box_shadow = "0 0 0 #BEE3F8"
+        button.style.transform = "translateY(0)"
+        button.style.border_radius = ".5em"
+        button.style.font_size = "1.4vmin"
+        button.style.font_family = "'Poppins', sans-serif"
+        button.style.cursor = "pointer"
+        output = widgets.Output()
+
+        @output.capture()
+        def on_click(button):
+            button.disabled = True
+            button.layout.height = '0'
+            button.layout.visibility = 'hidden'
+            saola.user << True
+
+        button.on_click(on_click)
+        display(button)
+        display(output)
         return None
 
     def no_safety_confirmation(self):
@@ -143,9 +175,21 @@ class NotebookUI(UI):
 
         <style type="text/css">
 
+        :root {    
+            --jp-widgets-margin: 0px; /* Adjust the value as needed */
+        }
+                     
+        .output_subarea {
+            padding: 0px !important;
+        }
+
         code.language-saola_output {
             background-color: #303030;
             border: 2px solid #000;
+        }
+                     
+        code.language-__title__ {
+            display: none !important;
         }
             
         .saola-code-toggle + label {
@@ -169,6 +213,7 @@ class NotebookUI(UI):
         }
         
         .saola-markdown-rendered > p {
+            margin-top: 1em;
             margin-bottom: 1em;
         }
                      
@@ -455,46 +500,24 @@ class NotebookUI(UI):
                     return nodes.flatMap(node => Array.from(node.children).filter(child => child.tagName === innerTagName));
                 }*/
 
-                function getMutationSubjects(mutation, mutationSelectors, targetParentSelector=null) {
+                function queryAddedNodes(mutation, selector) {
                     if (mutation.type !== 'childList') return [];
-                    if (mutationSelectors.length === 0) return [];
-                    if (targetParentSelector && (!mutation.target.parentNode || !mutation.target.parentNode.matches(targetParentSelector))) return [];
-                    if (!mutation.target.matches(mutationSelectors[0])) return [];
-                    if (mutationSelectors.length === 1) return [mutation.target];
-                    var i = 1;
-                    nodes = Array.from(mutation.addedNodes).filter(node => node.matches(mutationSelectors[1]));
-                    while (i < mutationSelectors.length - 1) {
-                        i++;
-                        nodes = nodes.flatMap(node => Array.from(node.children).filter(child => child.matches(mutationSelectors[i])));
-                    }
-                    return nodes
+                    target = mutation.target;
+                    addedNodes = Array.from(mutation.addedNodes)
+                    nodes0 = addedNodes.flatMap(node => node.querySelectorAll ? Array.from(node.querySelectorAll(selector)) : [])
+                    nodes1 = addedNodes.filter(node => node.matches && node.matches(selector))
+                    nodes2 = mutation.target.matches(selector) ? [mutation.target] : []
+                    return nodes0.concat(nodes1).concat(nodes2);
                 }
 
                 // Define the callback function to execute when mutations are observed
                 const callback = function(mutationsList, observer) {
                     for (const mutation of mutationsList) {
-                        if (mutation.target.matches('pre')) {
-                            console.log(mutation);
-                        }
-                        /*
                         // Jupyter Notebook & JupyterLab
-                        pres0 = getAddedDescendants(mutation, ['jp-OutputArea-output'], 'PRE');
-                        pres1 = getAddedDescendants(mutation, ['jp-OutputArea', 'jp-OutputArea-child', 'jp-OutputArea-output'], 'PRE');
+                        pres0 = queryAddedNodes(mutation, '.jp-OutputArea-output > pre')
                         // NbClassic
-                        pres2 = getAddedDescendants(mutation, ['output', 'output_area', 'output_subarea'], 'PRE');
-                        pres3 = getAddedDescendants(mutation, [], 'PRE', 'output_subarea');
-                        */
-                        // Jupyter Notebook & JupyterLab
-                        pres0 = getMutationSubjects(mutation, ['.jp-OutputArea-output', 'pre']);
-                        pres1 = getMutationSubjects(mutation, ['.jp-OutputArea', '.jp-OutputArea-child', '.jp-OutputArea-output', 'pre']);
-                        // NbClassic
-                        pres2 = getMutationSubjects(mutation, ['.output', '.output_area', '.output_subarea', 'pre']);
-                        pres3 = getMutationSubjects(mutation, ['pre'], '.output_subarea');
-                        pres = pres0.concat(pres1).concat(pres2).concat(pres3);
-                        if (mutation.target.matches('pre')) {
-                            console.log(pres);
-                            pres.forEach(p => console.log(p.textContent));
-                        }
+                        pres1 = queryAddedNodes(mutation, '.output_subarea > pre');
+                        pres = pres0.concat(pres1)
                         pres.forEach(processPlainTextOutput);
                     }
                 };
@@ -559,9 +582,15 @@ class NotebookUI(UI):
                     }, 1);
                 }
 
+                function processAllPlainTextOutput() {
+                    document.querySelectorAll('.jp-OutputArea-output > pre').forEach(processPlainTextOutput);
+                    document.querySelectorAll('.output_subarea > pre').forEach(processPlainTextOutput);
+                }
+
                 window.saola.getContainingCell = getContainingCell;
                 window.saola.setCellText = setCellText;
                 window.saola.stopAssistantAnimations = stopAssistantAnimations;
+                window.saola.processAllPlainTextOutput = processAllPlainTextOutput;
             }
 
             window.markedModuleImported""" + uuid + """ = function(marked) {

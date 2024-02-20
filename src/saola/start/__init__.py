@@ -1,4 +1,4 @@
-from saola.convo import Convo, ShellInterface, FileShowInterface, FileWriteInterface, SearchInterface, PythonInterface
+from saola.convo import Convo, TitleInterface, ShellInterface, FileShowInterface, FileWriteInterface, SearchInterface, PythonInterface
 from saola.model import OpenAIModel
 from saola.ui import DefaultUI
 from rich.panel import Panel
@@ -45,6 +45,6 @@ def start(safety_checks=True, show_warning=True, show_model_info=False):
     return Convo(
         OpenAIModel(model_name, client=client),
         ui=ui,
-        interfaces=[ShellInterface, FileShowInterface, FileWriteInterface, SearchInterface, PythonInterface],
+        interfaces=[TitleInterface, ShellInterface, FileShowInterface, FileWriteInterface, SearchInterface, PythonInterface],
         safety_checks=safety_checks
     ).loop()
